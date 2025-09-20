@@ -1,0 +1,132 @@
+# Gradle
+.gradle/
+build/
+!gradle/wrapper/gradle-wrapper.jar
+!**/src/main/**/build/
+!**/src/test/**/build/
+
+# IntelliJ IDEA
+.idea/
+*.iws
+*.iml
+*.ipr
+out/
+!**/src/main/**/out/
+!**/src/test/**/out/
+
+# Eclipse
+.apt_generated
+.classpath
+.factorypath
+.project
+.settings
+.springBeans
+.sts4-cache
+bin/
+!**/src/main/**/bin/
+!**/src/test/**/bin/
+
+# VS Code
+.vscode/
+
+# NetBeans
+/nbproject/private/
+/nbbuild/
+/dist/
+/nbdist/
+/.nb-gradle/
+
+# OS Files
+.DS_Store
+.DS_Store?
+._*
+.Spotlight-V100
+.Trashes
+ehthumbs.db
+Thumbs.db
+
+# Java
+*.class
+*.log
+*.ctxt
+.mtj.tmp/
+*.jar
+!gradle/wrapper/gradle-wrapper.jar
+!**/src/main/**/*.jar
+!**/src/test/**/*.jar
+*.war
+*.nar
+*.ear
+*.zip
+*.tar.gz
+*.rar
+hs_err_pid*
+replay_pid*
+
+# Minecraft Development
+run/
+logs/
+crash-reports/
+.mixin.out/
+
+# Fabric/Quilt
+remappedSrc/
+.fabric/
+
+# Development and Testing
+*.log.*
+*.tmp
+*.bak
+*.swp
+*.swo
+*~
+.cache/
+temp/
+tmp/
+
+# API Keys and Secrets (important for your Hypixel API integration)
+*.key
+*.secret
+config/secrets.properties
+api-keys.txt
+hypixel-api-key.txt
+
+# User-specific configuration files
+user.properties
+local.properties
+gradle-local.properties
+
+# Performance profiling
+*.hprof
+*.prof
+
+# Minecraft mod development
+mods/
+saves/
+screenshots/
+options.txt
+servers.dat
+usercache.json
+usernamecache.json
+
+# Documentation build outputs
+docs/_build/
+site/
+
+# Dependency downloads
+libs/
+dependencies/
+
+# Version control
+*.orig
+*.rej
+
+# Database files (if you ever add local storage)
+*.db
+*.sqlite
+*.sqlite3
+
+# Environment files
+.env
+.env.local
+.env.*.local
