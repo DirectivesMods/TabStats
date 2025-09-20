@@ -1,0 +1,18 @@
+[
+  {
+    "modid": "tabstats",
+    "name": "TabStats",
+    "description": "A 1.8.9 Hypixel forge mod made for stat checking directly into your tablist!",
+  "version": "1.1.0",
+    "mcversion": "1.8.9",
+  "url": "",
+  "updateUrl": "",
+    "authorList": [
+      "exejar"
+    ],
+    "credits": "Max, Directives, and ya.",
+    "logoFile": "",
+    "screenshots": [ ],
+    "dependencies": [ ]
+  }
+]
