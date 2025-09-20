@@ -313,7 +313,9 @@ public class StatsTab extends GuiPlayerTabOverlay {
         if (team != null) {
             /** remove [NON] as it's not shown in regular tab */
             String colorPrefix = team.getColorPrefix();
-            if (ChatColor.stripColor(colorPrefix).contains(ChatColor.stripColor(playerRank))) {
+            
+            // Don't remove gray color for non-ranked players - preserve it
+            if (ChatColor.stripColor(colorPrefix).contains(ChatColor.stripColor(playerRank)) && !playerRank.equals("§7")) {
                 playerRank = "";
 //                /* aqua colored MVP++ */
 //                if (!colorPrefix.contains(playerRank) && colorPrefix.contains("++")) {

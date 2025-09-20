@@ -94,59 +94,64 @@ public class HPlayer {
     }
 
     public void setPlayerRank(JsonObject playerObject) {
-        String s = "§7", staff, rank = "", rankColour, mvpPlusPlus;  // Default to gray for non-ranked players
+        String s = "§7";  // Default to gray for non-ranked players
+        String staff = "NOT STAFF", rank = "", rankColour = "RED", mvpPlusPlus = "NEVER BROUGHT";
         JsonObject player = playerObject.getAsJsonObject();
 
+        // Get staff rank
         try {
             staff = player.get("rank").getAsString();
-        } catch (NullPointerException ignored) {
+        } catch (Exception ignored) {
             staff = "NOT STAFF";
         }
+        
+        // Get monthly package rank (MVP++)
         try {
             mvpPlusPlus = player.get("monthlyPackageRank").getAsString();
-        } catch (Exception e) {
+        } catch (Exception ignored) {
             mvpPlusPlus = "NEVER BROUGHT";
         }
+        
+        // Get regular package rank (VIP, MVP, etc.)
         try {
             rank = player.get("newPackageRank").getAsString();
-        } catch (NullPointerException e) {
+        } catch (Exception ignored) {
             rank = "";  // No rank for non-ranked players
         }
+        
+        // Get rank color
         try {
             rankColour = player.get("rankPlusColor").getAsString();
-        } catch (Exception e) {
+        } catch (Exception ignored) {
             rankColour = "RED";
         }
         
-        // Only change from default gray if player actually has a rank
-        if (mvpPlusPlus.equalsIgnoreCase("SUPERSTAR")) {
+        // Check for staff ranks first (highest priority)
+        if (staff.equalsIgnoreCase("HELPER")) {
+            s = ChatColor.BLUE + "[HELPER] ";
+        } else if (staff.equalsIgnoreCase("MODERATOR")) {
+            s = ChatColor.DARK_GREEN + "[MODERATOR] ";
+        } else if (staff.equalsIgnoreCase("ADMIN")) {
+            s = ChatColor.RED + "[ADMIN] ";
+        } else if (staff.equalsIgnoreCase("YOUTUBER")) {
+            s = ChatColor.RED + "[" + ChatColor.WHITE + "YOUTUBE" + ChatColor.RED + "] ";
+        }
+        // Check for MVP++ (superstar)
+        else if (mvpPlusPlus.equalsIgnoreCase("SUPERSTAR")) {
             s = ChatColor.GOLD + "[MVP" + ChatColor.valueOf(rankColour) + "++" + ChatColor.GOLD + "] ";
-        } else if (!mvpPlusPlus.equalsIgnoreCase("SUPERSTAR")) {
-            if (rank.equalsIgnoreCase("MVP_PLUS")) {
-                s = ChatColor.AQUA + "[MVP" + ChatColor.valueOf(rankColour) + "+" + ChatColor.AQUA + "] ";
-            } else if (rank.equalsIgnoreCase("MVP")) {
-                s = ChatColor.AQUA + "[MVP] ";
-            } else if (rank.equalsIgnoreCase("VIP_PLUS")) {
-                s = ChatColor.GREEN + "[VIP" + ChatColor.GOLD + "+" + ChatColor.GREEN + "] ";
-            } else if (rank.equalsIgnoreCase("VIP")) {
-                s = ChatColor.GREEN + "[VIP] ";
-            }
-            // If no rank matches, keep default gray color (s = "§7")
         }
+        // Check for other ranks
+        else if (rank.equalsIgnoreCase("MVP_PLUS")) {
+            s = ChatColor.AQUA + "[MVP" + ChatColor.valueOf(rankColour) + "+" + ChatColor.AQUA + "] ";
+        } else if (rank.equalsIgnoreCase("MVP")) {
+            s = ChatColor.AQUA + "[MVP] ";
+        } else if (rank.equalsIgnoreCase("VIP_PLUS")) {
+            s = ChatColor.GREEN + "[VIP" + ChatColor.GOLD + "+" + ChatColor.GREEN + "] ";
+        } else if (rank.equalsIgnoreCase("VIP")) {
+            s = ChatColor.GREEN + "[VIP] ";
+        }
+        // If no rank matches, keep default gray color (s = "§7")
         
-        // Staff ranks override everything
-        try {
-            if (staff.equalsIgnoreCase("HELPER")) {
-                s = ChatColor.BLUE + "[HELPER] ";
-            } else if (staff.equalsIgnoreCase("MODERATOR")) {
-                s = ChatColor.DARK_GREEN + "[MODERATOR] ";
-            } else if (staff.equalsIgnoreCase("ADMIN")) {
-                s = ChatColor.RED + "[ADMIN] ";
-            } else if (staff.equalsIgnoreCase("YOUTUBER")) {
-                s = ChatColor.RED + "[" + ChatColor.WHITE + "YOUTUBE" + ChatColor.RED + "] ";
-            }
-        } catch (Exception ignored) {
-        }
         this.playerRank = s;
     }
 
