@@ -3,7 +3,7 @@ A 1.8.9 Hypixel forge mod made for stat checking directly into your tablist!
 Discord: [https://discord.gg/F9pQmx37XJ](https://discord.gg/F9pQmx37XJ)
 
 **Instructions:**
-- Drop the latest release into your mods folder
+- Drop the [latest release](https://github.com/DirectivesMods/tabstats/releases/latest) into your mods folder
 - Open the [Hypixel Developer Dashboard](https://developer.hypixel.net/dashboard) and generate an API key
 - Run /tabstats in game and paste your API key into the menu
 - Enjoy real-time stat checking
