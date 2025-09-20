@@ -1,5 +1,13 @@
 A 1.8.9 Hypixel forge mod made for stat checking directly into your tablist!
 
+Discord: [https://discord.gg/F9pQmx37XJ](https://discord.gg/F9pQmx37XJ)
+
+**Instructions:**
+- Drop the latest release into your mods folder
+- Open the [Hypixel Developer Dashboard](https://developer.hypixel.net/dashboard) and generate an API key
+- Run /tabstats in game and paste your API key into the menu
+- Enjoy real-time stat checking
+
 **Images:**
 
 ![bedwars](https://user-images.githubusercontent.com/87586485/141643040-b229ad0a-f7b6-475f-a289-5ab3ce73ad10.png)
@@ -9,12 +17,11 @@ A 1.8.9 Hypixel forge mod made for stat checking directly into your tablist!
 - Bedwars
 - Duels
 
-**Plans:**
-- Add an antisniper
-- Add autododge
-- Add Skywars, Blitz, and UHC support
-
-**Contributors:**
+**Contributors:** (love these guys)
 - @exejar
 - @yabqy
 - @DirectivesMods
+
+**Info:**
+- Your API key is stored in .minecraft/tabstats/apikey.json and you can update it manually from there
+- No, this does not work on Lunar (yet) - if someone wants to port it to Weave you may
