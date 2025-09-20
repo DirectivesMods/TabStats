@@ -109,11 +109,12 @@ public class ModConfig {
 
     public void save() {
         HashMap<String, Object> map = new HashMap<>();
-        map.put(APIKEY.toString(), getApiKey());
+        map.put(APIKEY.toString(), this.apiKey); // Use the internal field, not getApiKey()
         try (Writer writer = new FileWriter(getFile())) {
             Handler.getGson().toJson(map, writer);
+            writer.flush(); // Ensure it's written to disk
         } catch (Exception ex) {
-            // Silent fail for config save
+            ex.printStackTrace(); // Show errors for debugging
         }
     }
 
