@@ -1,14 +1,4 @@
-**TabStats**
-
-
-**A 1.8.9 Hypixel forge mod made for stat checking directly into your tablist!**
-
-
-When you first join Hypixel with this mod, type **/api new**, then restart your game.
-
-
-Join Our **Discord** for support: https://discord.gg/maxstats *(Backup https://maxstats.club/discord)*
-
+A 1.8.9 Hypixel forge mod made for stat checking directly into your tablist!
 
 **Images:**
 
@@ -28,26 +18,3 @@ Join Our **Discord** for support: https://discord.gg/maxstats *(Backup https://m
 - @exejar
 - @yabqy
 - @DirectivesMods
-
-
-## Gradle wrapper troubleshooting
-
-If you see "Could not find or load main class org.gradle.wrapper.GradleWrapperMain" when running `./gradlew`, the wrapper JAR is missing from `gradle/wrapper/gradle-wrapper.jar`.
-
-Fixes:
-
-- Restore the `gradle-wrapper.jar` file into `gradle/wrapper/` (it is safe to copy the jar from the Gradle repository for the project's Gradle version). For example:
-
-```sh
-cd /path/to/project
-curl -fL -o gradle/wrapper/gradle-wrapper.jar https://raw.githubusercontent.com/gradle/gradle/v6.9.1/gradle/wrapper/gradle-wrapper.jar
-chmod +x gradlew
-```
-
-- Alternatively, if you have Gradle installed locally, regenerate the wrapper from the project root:
-
-```sh
-gradle wrapper
-```
-
-After restoring/regenerating the jar, run `./gradlew --version` to verify the wrapper works.
