@@ -1,10 +1,12 @@
-package club.maxstats.tabstats;
+package tabstats;
 
-import club.maxstats.tabstats.config.ModConfig;
+import tabstats.config.ModConfig;
 // ApiKeyListener removed: API key will no longer be captured from in-game chat
-import club.maxstats.tabstats.listener.GameOverlayListener;
-import club.maxstats.tabstats.playerapi.WorldLoader;
-import club.maxstats.tabstats.util.References;
+import tabstats.listener.GameOverlayListener;
+import tabstats.listener.GuiOpenListener;
+import tabstats.playerapi.WorldLoader;
+import tabstats.util.References;
+import tabstats.command.TabStatsCommand;
 import net.minecraft.command.ICommand;
 import net.minecraftforge.client.ClientCommandHandler;
 import net.minecraftforge.common.MinecraftForge;
@@ -30,26 +32,19 @@ public class TabStats {
     /* Initialization Event, Called during the initialization of Forge */
     @Mod.EventHandler
     public void init(FMLInitializationEvent event) {
-    this.statWorld = new WorldLoader();
-    this.registerListeners(statWorld, new GameOverlayListener());
-        try {
-            net.minecraftforge.fml.client.registry.ClientRegistry.registerKeyBinding(club.maxstats.tabstats.input.KeyInputHandler.OPEN_GUI);
-        } catch (Throwable ignored) {}
+        this.statWorld = new WorldLoader();
+        this.registerListeners(statWorld, new GameOverlayListener(), new GuiOpenListener());
     }
 
     /* Post Initialization Event, Called after the initialization of Forge */
     @Mod.EventHandler
     public void postInit(FMLPostInitializationEvent event) {
-
+        // Register commands in postInit to ensure everything is properly initialized
+        ClientCommandHandler.instance.registerCommand(new TabStatsCommand());
     }
 
     private void registerListeners(Object... listeners) {
         Arrays.stream(listeners).forEachOrdered(MinecraftForge.EVENT_BUS::register);
-    }
-
-    /* used to register forge commands */
-    private void registerCommands(ICommand... commands) {
-        Arrays.stream(commands).forEachOrdered(ClientCommandHandler.instance::registerCommand);
     }
 
     public static TabStats getTabStats() { return tabStats; }

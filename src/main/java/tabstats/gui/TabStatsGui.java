@@ -18,6 +18,7 @@ public class TabStatsGui extends GuiScreen {
 
     @Override
     public void initGui() {
+        super.initGui();
         this.buttonList.clear();
         int centerX = this.width / 2;
         int y = this.height / 2 - 20;

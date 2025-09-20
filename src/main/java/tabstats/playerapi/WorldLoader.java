@@ -4,7 +4,6 @@ import net.minecraft.client.Minecraft;
 import net.minecraft.entity.player.EntityPlayer;
 import net.minecraftforge.fml.common.eventhandler.SubscribeEvent;
 import net.minecraftforge.fml.common.gameevent.TickEvent;
-import tabstats.input.KeyInputHandler;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -22,8 +21,6 @@ public class WorldLoader extends StatWorld {
     @SubscribeEvent
     public void onTick(TickEvent event) {
         if (mc.theWorld != null && mc.thePlayer != null) {
-            // Poll key input for GUI
-            try { KeyInputHandler.poll(); } catch (Throwable ignored) {}
             for (EntityPlayer entityPlayer : mc.theWorld.playerEntities) {
                 if (!existedMoreThan5Seconds.contains(entityPlayer.getUniqueID())) {
                     if (!this.timeCheck.containsKey(entityPlayer.getUniqueID()))
