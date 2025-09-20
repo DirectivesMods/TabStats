@@ -32,7 +32,6 @@ public class ModConfig {
             if (freshApiKey != null && !freshApiKey.trim().isEmpty()) {
                 // Check if API key has changed
                 if (lastApiKey != null && !lastApiKey.equals(freshApiKey)) {
-                    System.out.println("TabStats: API key changed - clearing cached player data");
                     onApiKeyChanged();
                 }
                 this.lastApiKey = freshApiKey;
@@ -51,7 +50,7 @@ public class ModConfig {
                 tabStats.getStatWorld().refreshAllPlayers();
             }
         } catch (Exception e) {
-            System.out.println("TabStats: Error clearing cache on API key change: " + e.getMessage());
+            // Silent fail - don't spam console
         }
     }
 
@@ -114,8 +113,7 @@ public class ModConfig {
         try (Writer writer = new FileWriter(getFile())) {
             Handler.getGson().toJson(map, writer);
         } catch (Exception ex) {
-            System.out.println("Unable to save config file");
-            ex.printStackTrace();
+            // Silent fail for config save
         }
     }
 

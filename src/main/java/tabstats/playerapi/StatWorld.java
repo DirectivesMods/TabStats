@@ -42,7 +42,6 @@ public class StatWorld {
     public void refreshAllPlayers() {
         // Clear all cached data to force re-fetching with new API key
         clearPlayers();
-        System.out.println("TabStats: Cleared all cached player data - will re-fetch with current API key");
     }
 
     public void refreshPlayer(UUID uuid) {
@@ -51,7 +50,6 @@ public class StatWorld {
         statAssembly.remove(uuid);
         existedMoreThan5Seconds.remove(uuid);
         timeCheck.remove(uuid);
-        System.out.println("TabStats: Cleared cached data for player: " + uuid);
     }
 
     public ConcurrentHashMap<UUID, HPlayer> getWorldPlayers() {
@@ -100,8 +98,6 @@ public class StatWorld {
                 } catch (PlayerNullException | ApiRequestException | InvalidKeyException | BadJsonException ex) {
                     this.addPlayer(uuid, hPlayer);
                     this.removeFromStatAssembly(uuid);
-                    System.out.println("Could not retrieve player");
-                    ex.printStackTrace();
                     return;
                 }
             }

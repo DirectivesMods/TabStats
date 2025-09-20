@@ -48,7 +48,6 @@ public class HypixelAPI {
                 HttpGet request = new HttpGet(requestURL);
                 JsonParser parser = new JsonParser();
 
-                System.out.println("Stat checking " + uuid);
                 try {
                     StringWriter writer = new StringWriter();
                     IOUtils.copy(new InputStreamReader(client.execute(request).getEntity().getContent(), StandardCharsets.UTF_8), writer);

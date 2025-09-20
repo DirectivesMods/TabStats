@@ -1,9 +1,7 @@
 package tabstats.playerapi.exception;
 
 public class PlayerNullException extends Exception {
-
     public PlayerNullException() {
-        System.out.println("Player returned as null");
+        super("Player returned as null");
     }
-
 }

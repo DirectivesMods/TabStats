@@ -157,11 +157,6 @@ public abstract class DuelsUtil extends HGameBase {
             int gamemodeWins = duels.duelJson.get(duelMode.getWinsJson()).getAsInt();
             int multiplier = title.toLowerCase().contains("all modes") ? 2 : 1;
 
-            if (title.toLowerCase().contains("world elite")) {
-                System.out.println(gamemodeWins);
-                System.out.println(duelMode.getWinsJson());
-            }
-
             if (gamemodeWins >= 100000 * multiplier) {
                 return ChatColor.GOLD + gamemodeName + " World's Best";
             } else if (gamemodeWins >= 50000 * multiplier) {
