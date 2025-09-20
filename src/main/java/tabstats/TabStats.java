@@ -1,13 +1,11 @@
 package tabstats;
 
 import tabstats.config.ModConfig;
-// ApiKeyListener removed: API key will no longer be captured from in-game chat
 import tabstats.listener.GameOverlayListener;
 import tabstats.listener.GuiOpenListener;
 import tabstats.playerapi.WorldLoader;
 import tabstats.util.References;
 import tabstats.command.TabStatsCommand;
-import net.minecraft.command.ICommand;
 import net.minecraftforge.client.ClientCommandHandler;
 import net.minecraftforge.common.MinecraftForge;
 import net.minecraftforge.fml.common.Mod;
@@ -22,24 +20,20 @@ public class TabStats {
     private static TabStats tabStats;
     private WorldLoader statWorld;
 
-    /* Pre Initialization Event, Called before the initialization of Forge */
     @Mod.EventHandler
     public void preInit(FMLPreInitializationEvent event) {
         tabStats = this;
         ModConfig.getInstance().init();
     }
 
-    /* Initialization Event, Called during the initialization of Forge */
     @Mod.EventHandler
     public void init(FMLInitializationEvent event) {
         this.statWorld = new WorldLoader();
         this.registerListeners(statWorld, new GameOverlayListener(), new GuiOpenListener());
     }
 
-    /* Post Initialization Event, Called after the initialization of Forge */
     @Mod.EventHandler
     public void postInit(FMLPostInitializationEvent event) {
-        // Register commands in postInit to ensure everything is properly initialized
         ClientCommandHandler.instance.registerCommand(new TabStatsCommand());
     }
 
@@ -47,9 +41,11 @@ public class TabStats {
         Arrays.stream(listeners).forEachOrdered(MinecraftForge.EVENT_BUS::register);
     }
 
-    public static TabStats getTabStats() { return tabStats; }
+    public static TabStats getTabStats() { 
+        return tabStats; 
+    }
 
-    public WorldLoader getStatWorld() { return statWorld; }
+    public WorldLoader getStatWorld() { 
+        return statWorld; 
+    }
 }
-
-//

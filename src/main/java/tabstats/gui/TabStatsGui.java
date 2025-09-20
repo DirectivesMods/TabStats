@@ -7,8 +7,6 @@ import net.minecraft.client.gui.GuiButton;
 import net.minecraft.client.gui.GuiScreen;
 import net.minecraft.client.gui.GuiTextField;
 import net.minecraft.util.ChatComponentText;
-import java.awt.Toolkit;
-import java.awt.datatransfer.DataFlavor;
 import java.io.IOException;
 
 public class TabStatsGui extends GuiScreen {
@@ -23,18 +21,14 @@ public class TabStatsGui extends GuiScreen {
         int centerX = this.width / 2;
         int y = this.height / 2 - 20;
 
-        // GuiTextField constructor for 1.8.9: GuiTextField(id, FontRenderer, x, y, width, height)
-        // Made slightly smaller for better proportions
         this.apiField = new GuiTextField(3, this.fontRendererObj, centerX - 110, y - 24, 220, 20);
-        this.apiField.setMaxStringLength(50); // Allow enough characters for UUID format
+        this.apiField.setMaxStringLength(50);
         String current = ModConfig.getInstance().getApiKey();
         this.actualApiKey = current == null ? "" : current;
         this.showingApiKey = false;
         updateFieldDisplay();
 
-        // Add show/hide button next to the text field
         this.buttonList.add(new GuiButton(4, centerX + 120, y - 24, 40, 20, "Show"));
-
         this.buttonList.add(new GuiButton(0, centerX - 100, y + 8, 60, 20, "Save"));
         this.buttonList.add(new GuiButton(1, centerX - 30, y + 8, 60, 20, "Clear"));
         this.buttonList.add(new GuiButton(2, centerX + 40, y + 8, 60, 20, "Close"));
@@ -44,13 +38,10 @@ public class TabStatsGui extends GuiScreen {
         if (showingApiKey) {
             this.apiField.setText(actualApiKey);
         } else {
-            // Show asterisks but keep last 4 digits visible for identification
             String masked = "";
             if (actualApiKey.length() <= 4) {
-                // If key is 4 characters or less, show it all
                 masked = actualApiKey;
             } else {
-                // Show asterisks for all but last 4 characters
                 for (int i = 0; i < actualApiKey.length() - 4; i++) {
                     masked += "*";
                 }
@@ -67,11 +58,10 @@ public class TabStatsGui extends GuiScreen {
             String key = this.actualApiKey.trim();
             cfg.setApiKey(key);
             cfg.save();
-            // Clear all cached stats when API key changes
             try {
                 tabstats.TabStats.getTabStats().getStatWorld().refreshAllPlayers();
             } catch (Exception e) {
-                // Silent fail - don't spam console
+                // Silent fail
             }
             Minecraft.getMinecraft().thePlayer.addChatMessage(new ChatComponentText(ChatColor.GREEN + "TabStats API key updated!"));
         } else if (button.id == 1) {
@@ -79,16 +69,15 @@ public class TabStatsGui extends GuiScreen {
             cfg.save();
             this.actualApiKey = "";
             updateFieldDisplay();
-            // Clear all cached stats when API key is cleared
             try {
                 tabstats.TabStats.getTabStats().getStatWorld().refreshAllPlayers();
             } catch (Exception e) {
-                // Silent fail - don't spam console
+                // Silent fail
             }
             Minecraft.getMinecraft().thePlayer.addChatMessage(new ChatComponentText(ChatColor.GREEN + "TabStats API key cleared."));
         } else if (button.id == 2) {
             Minecraft.getMinecraft().displayGuiScreen(null);
-        } else if (button.id == 4) { // Show/Hide toggle
+        } else if (button.id == 4) {
             this.showingApiKey = !this.showingApiKey;
             button.displayString = this.showingApiKey ? "Hide" : "Show";
             updateFieldDisplay();
@@ -103,7 +92,6 @@ public class TabStatsGui extends GuiScreen {
         }
         
         if (this.apiField.isFocused()) {
-            // Handle paste, copy, and select all - check for both Ctrl+V/C/A and Cmd+V/C/A
             boolean isPaste = false;
             boolean isCopy = false;
             boolean isSelectAll = false;
@@ -132,7 +120,6 @@ public class TabStatsGui extends GuiScreen {
                     // Ignore clipboard errors
                 }
             } else if (isCopy) {
-                // Copy the actual API key to clipboard
                 try {
                     java.awt.datatransfer.StringSelection selection = new java.awt.datatransfer.StringSelection(actualApiKey);
                     java.awt.Toolkit.getDefaultToolkit().getSystemClipboard().setContents(selection, null);
@@ -140,18 +127,17 @@ public class TabStatsGui extends GuiScreen {
                     // Ignore clipboard errors
                 }
             } else if (isSelectAll) {
-                // Select all text in the field
                 this.apiField.setCursorPositionZero();
                 this.apiField.setSelectionPos(this.apiField.getText().length());
-            } else if (keyCode == 14) { // Backspace
+            } else if (keyCode == 14) {
                 if (actualApiKey.length() > 0) {
                     actualApiKey = actualApiKey.substring(0, actualApiKey.length() - 1);
                     updateFieldDisplay();
                 }
-            } else if (keyCode == 211) { // Delete key
+            } else if (keyCode == 211) {
                 actualApiKey = "";
                 updateFieldDisplay();
-            } else if (typedChar >= 32 && typedChar < 127 && actualApiKey.length() < 50) { // Printable characters
+            } else if (typedChar >= 32 && typedChar < 127 && actualApiKey.length() < 50) {
                 actualApiKey += typedChar;
                 updateFieldDisplay();
             }

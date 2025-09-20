@@ -70,11 +70,11 @@ public class ModConfig {
                     writer.write(placeholder);
                     writer.flush();
                 } catch (Exception e) {
-                    e.printStackTrace();
+                    // Silently handle file write errors
                 }
             }
         } catch (Exception e) {
-            e.printStackTrace();
+            // Silently handle file creation errors
         }
     }
 
@@ -114,7 +114,7 @@ public class ModConfig {
             Handler.getGson().toJson(map, writer);
             writer.flush(); // Ensure it's written to disk
         } catch (Exception ex) {
-            ex.printStackTrace(); // Show errors for debugging
+            // Silently handle save errors
         }
     }
 
@@ -126,7 +126,7 @@ public class ModConfig {
             s = object.get(key.toString()).getAsString();
         } catch (NullPointerException ignored) {
         } catch (Exception ex) {
-            ex.printStackTrace();
+            // Silently handle read errors
         }
         return s;
     }

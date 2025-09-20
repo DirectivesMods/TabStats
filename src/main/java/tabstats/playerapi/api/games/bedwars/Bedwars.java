@@ -61,12 +61,6 @@ public class Bedwars extends BedwarsUtil {
             }
             return false;
         } catch (GameNullException ex) {
-            if (!this.isNicked) {
-                System.out.println(String.format("Maybe %s has never played %s before", getPlayerName(), game.getGameName()));
-            }
-
-            System.out.println("Failed to Set Data");
-            ex.printStackTrace();
             return false;
         }
     }

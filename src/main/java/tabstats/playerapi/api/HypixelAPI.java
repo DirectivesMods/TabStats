@@ -66,8 +66,7 @@ public class HypixelAPI {
                 else if (obj.get("success").getAsString().equals("false"))
                     throw new ApiRequestException();
             } catch (IOException ex) {
-                System.out.println("Error with setGameData");
-                ex.printStackTrace();
+                // Silently handle IO errors
             }
         }
 
@@ -75,7 +74,6 @@ public class HypixelAPI {
         if (player.get("achievements") != null)
             this.achievementObj = player.get("achievements").getAsJsonObject();
 
-        /* TODO Kind of Redundant */
         this.playerObject = player;
         return obj;
     }
@@ -109,12 +107,10 @@ public class HypixelAPI {
                 JsonObject object = jsonParser.parse(new InputStreamReader(is, StandardCharsets.UTF_8)).getAsJsonObject();
                 uuid = object.get("id").getAsString();
             } catch (NullPointerException ex) {
-                System.out.println("Could not getUUID");
-                ex.printStackTrace();
+                // Silently handle null pointer errors
             }
         } catch (IOException ex) {
-            System.out.println("Could not getUUID");
-            ex.printStackTrace();
+            // Silently handle IO errors
         }
 
         return uuid;

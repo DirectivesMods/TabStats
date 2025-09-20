@@ -169,7 +169,6 @@ public abstract class HGameBase extends HypixelAPI {
         try {
             d = Double.parseDouble(formattedString);
         } catch (NumberFormatException e) {
-            e.printStackTrace();
             d = int1;
         }
         return d;

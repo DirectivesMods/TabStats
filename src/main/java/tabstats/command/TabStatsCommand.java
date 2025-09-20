@@ -4,7 +4,6 @@ import tabstats.listener.GuiOpenListener;
 import net.minecraft.command.CommandBase;
 import net.minecraft.command.CommandException;
 import net.minecraft.command.ICommandSender;
-import net.minecraft.util.BlockPos;
 
 import java.util.Arrays;
 import java.util.List;
@@ -42,7 +41,8 @@ public class TabStatsCommand extends CommandBase {
     }
     
     @Override
-    public List<String> addTabCompletionOptions(ICommandSender sender, String[] args, BlockPos pos) {
+    @SuppressWarnings("unchecked")
+    public List addTabCompletionOptions(ICommandSender sender, String[] args, net.minecraft.util.BlockPos pos) {
         return null;
     }
 }

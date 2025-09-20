@@ -83,20 +83,17 @@ public class StatWorld {
 
             if (!nicked) {
                 try {
-                    // retrieves the entire json object for the player and stores it in wholeObject
                     JsonObject wholeObject = new HypixelAPI().getWholeObject(playerUUID);
                     JsonObject playerObject = wholeObject.get("player").getAsJsonObject();
 
                     hPlayer.setPlayerRank(playerObject);
                     hPlayer.setPlayerName(playerObject.get("displayname").getAsString());
 
-                    // initialize which games you want the player to be created with
                     Bedwars bw = new Bedwars(playerName, playerUUID, wholeObject);
                     Duels duels = new Duels(playerName, playerUUID, wholeObject);
 
                     hPlayer.addGames(bw, duels);
                 } catch (PlayerNullException | ApiRequestException | InvalidKeyException | BadJsonException ex) {
-                    // Don't add player to list when API fails - this preserves original rank colors
                     this.removeFromStatAssembly(uuid);
                     return;
                 }
