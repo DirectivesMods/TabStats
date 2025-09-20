@@ -27,6 +27,11 @@ public class HypixelAPI {
      * @return JsonObject of the player's whole api result
      * @throws InvalidKeyException If Hypixel API Key is Invalid
      * @throws PlayerNullException If Target Player UUID is returned Null from the Hypixel API
+    /**
+     * @param uuid Target player's UUID
+     * @return JsonObject of the player's whole api result
+     * @throws InvalidKeyException If Hypixel API Key is Invalid
+     * @throws PlayerNullException If Target Player UUID is returned Null from the Hypixel API
      * @throws ApiRequestException If any other exception is thrown during the request
      */
     public JsonObject getWholeObject(String uuid) throws InvalidKeyException, PlayerNullException, ApiRequestException, BadJsonException {
@@ -34,9 +39,6 @@ public class HypixelAPI {
         if (key == null) {
             throw new InvalidKeyException();
         } else {
-            // String.format is basically constructing a String. %s is a placeholder which is defined by the strings placed after the initial String.
-            // so String.format("%s", "hello"); is the same as "hello"
-            // String.format("https://api.hypixel.net/player?key=%s&uuid=%s", key, uuid); is basically placing the key in the first placeholder, and uuid in the second
             String requestURL = String.format("https://api.hypixel.net/player?key=%s&uuid=%s", key, uuid.replace("-", ""));
             try (CloseableHttpClient client = HttpClients.createDefault()) {
                 HttpGet request = new HttpGet(requestURL);
