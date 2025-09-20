@@ -110,7 +110,7 @@ public class HPlayer {
         try {
             rank = player.get("newPackageRank").getAsString();
         } catch (NullPointerException e) {
-            s = ChatColor.GRAY + "[NON] ";
+            s = "";  // No rank display for non-ranked players
         }
         try {
             rankColour = player.get("rankPlusColor").getAsString();
@@ -146,7 +146,7 @@ public class HPlayer {
     }
 
     public String getPlayerRank() {
-        return this.playerRank == null || this.playerRank.isEmpty() ? "§7[NON] " : this.playerRank;
+        return this.playerRank == null || this.playerRank.isEmpty() ? "" : this.playerRank;
     }
 
     public String getPlayerRankColor() {
