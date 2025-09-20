@@ -92,19 +92,60 @@ public class TabStatsGui extends GuiScreen {
         }
         
         if (this.apiField.isFocused()) {
+            // Check for modifier keys first
+            boolean isModifierPressed = org.lwjgl.input.Keyboard.isKeyDown(org.lwjgl.input.Keyboard.KEY_LCONTROL) || 
+                org.lwjgl.input.Keyboard.isKeyDown(org.lwjgl.input.Keyboard.KEY_RCONTROL) ||
+                org.lwjgl.input.Keyboard.isKeyDown(org.lwjgl.input.Keyboard.KEY_LMETA) ||
+                org.lwjgl.input.Keyboard.isKeyDown(org.lwjgl.input.Keyboard.KEY_RMETA);
+            
+            // Handle arrow keys - check for Ctrl+Arrow first, then regular arrows
+            if (keyCode == 203) { // Left arrow key
+                if (isModifierPressed) {
+                    // Ctrl+Left: Jump to beginning
+                    this.apiField.setCursorPositionZero();
+                } else {
+                    // Regular Left: Move one position left
+                    int currentPos = this.apiField.getCursorPosition();
+                    if (currentPos > 0) {
+                        this.apiField.setCursorPosition(currentPos - 1);
+                    }
+                }
+                return; // Don't process other keys
+            } else if (keyCode == 205) { // Right arrow key  
+                if (isModifierPressed) {
+                    // Ctrl+Right: Jump to end
+                    this.apiField.setCursorPosition(this.apiField.getText().length());
+                } else {
+                    // Regular Right: Move one position right
+                    int currentPos = this.apiField.getCursorPosition();
+                    int maxPos = this.apiField.getText().length();
+                    if (currentPos < maxPos) {
+                        this.apiField.setCursorPosition(currentPos + 1);
+                    }
+                }
+                return; // Don't process other keys
+            } else if (keyCode == 199) { // Home key
+                this.apiField.setCursorPositionZero();
+                return;
+            } else if (keyCode == 207) { // End key
+                this.apiField.setCursorPosition(this.apiField.getText().length());
+                return;
+            }
+            
             boolean isPaste = false;
             boolean isCopy = false;
             boolean isSelectAll = false;
-            if (org.lwjgl.input.Keyboard.isKeyDown(org.lwjgl.input.Keyboard.KEY_LCONTROL) || 
-                org.lwjgl.input.Keyboard.isKeyDown(org.lwjgl.input.Keyboard.KEY_RCONTROL) ||
-                org.lwjgl.input.Keyboard.isKeyDown(org.lwjgl.input.Keyboard.KEY_LMETA) ||
-                org.lwjgl.input.Keyboard.isKeyDown(org.lwjgl.input.Keyboard.KEY_RMETA)) {
+            boolean isCtrlBackspace = false;
+                
+            if (isModifierPressed) {
                 if (keyCode == org.lwjgl.input.Keyboard.KEY_V) {
                     isPaste = true;
                 } else if (keyCode == org.lwjgl.input.Keyboard.KEY_C) {
                     isCopy = true;
                 } else if (keyCode == org.lwjgl.input.Keyboard.KEY_A) {
                     isSelectAll = true;
+                } else if (keyCode == 14) { // Ctrl+Backspace
+                    isCtrlBackspace = true;
                 }
             }
             
@@ -129,16 +170,62 @@ public class TabStatsGui extends GuiScreen {
             } else if (isSelectAll) {
                 this.apiField.setCursorPositionZero();
                 this.apiField.setSelectionPos(this.apiField.getText().length());
+            } else if (isCtrlBackspace) {
+                // Ctrl+Backspace: Delete everything to the left of cursor
+                int cursorPos = this.apiField.getCursorPosition();
+                int displayTextLength = this.apiField.getText().length();
+                int actualTextLength = actualApiKey.length();
+                
+                if (actualTextLength > 0 && cursorPos > 0) {
+                    // Calculate approximate cursor position in actual text
+                    int actualCursorPos;
+                    if (showingApiKey) {
+                        actualCursorPos = Math.min(cursorPos, actualTextLength);
+                    } else {
+                        // For masked text, if cursor is at end, it's at actual end
+                        if (cursorPos >= displayTextLength) {
+                            actualCursorPos = actualTextLength;
+                        } else {
+                            // Cursor is somewhere in the masked portion
+                            actualCursorPos = Math.min(cursorPos, actualTextLength);
+                        }
+                    }
+                    
+                    // Delete everything before the cursor position
+                    if (actualCursorPos > 0) {
+                        actualApiKey = actualApiKey.substring(actualCursorPos);
+                        updateFieldDisplay();
+                        // Set cursor to the beginning since we deleted everything before it
+                        this.apiField.setCursorPositionZero();
+                    }
+                }
             } else if (keyCode == 14) {
-                if (actualApiKey.length() > 0) {
+                // Check if text is selected (selection exists)
+                if (this.apiField.getSelectedText() != null && !this.apiField.getSelectedText().isEmpty()) {
+                    // Clear all text when backspace is pressed with selection
+                    actualApiKey = "";
+                    updateFieldDisplay();
+                } else if (actualApiKey.length() > 0) {
                     actualApiKey = actualApiKey.substring(0, actualApiKey.length() - 1);
                     updateFieldDisplay();
                 }
             } else if (keyCode == 211) {
-                actualApiKey = "";
-                updateFieldDisplay();
-            } else if (typedChar >= 32 && typedChar < 127 && actualApiKey.length() < 50) {
-                actualApiKey += typedChar;
+                // Check if text is selected for delete key too
+                if (this.apiField.getSelectedText() != null && !this.apiField.getSelectedText().isEmpty()) {
+                    // Clear all text when delete is pressed with selection
+                    actualApiKey = "";
+                    updateFieldDisplay();
+                } else {
+                    actualApiKey = "";
+                    updateFieldDisplay();
+                }
+            } else if (typedChar >= 32 && typedChar < 127) {
+                // Check if text is selected - if so, replace all text
+                if (this.apiField.getSelectedText() != null && !this.apiField.getSelectedText().isEmpty()) {
+                    actualApiKey = String.valueOf(typedChar);
+                } else if (actualApiKey.length() < 50) {
+                    actualApiKey += typedChar;
+                }
                 updateFieldDisplay();
             }
         } else {
