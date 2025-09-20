@@ -103,14 +103,20 @@ public class TabStatsGui extends GuiScreen {
         }
         
         if (this.apiField.isFocused()) {
-            // Handle paste - check for both Ctrl+V and Cmd+V
+            // Handle paste, copy, and select all - check for both Ctrl+V/C/A and Cmd+V/C/A
             boolean isPaste = false;
+            boolean isCopy = false;
+            boolean isSelectAll = false;
             if (org.lwjgl.input.Keyboard.isKeyDown(org.lwjgl.input.Keyboard.KEY_LCONTROL) || 
                 org.lwjgl.input.Keyboard.isKeyDown(org.lwjgl.input.Keyboard.KEY_RCONTROL) ||
                 org.lwjgl.input.Keyboard.isKeyDown(org.lwjgl.input.Keyboard.KEY_LMETA) ||
                 org.lwjgl.input.Keyboard.isKeyDown(org.lwjgl.input.Keyboard.KEY_RMETA)) {
                 if (keyCode == org.lwjgl.input.Keyboard.KEY_V) {
                     isPaste = true;
+                } else if (keyCode == org.lwjgl.input.Keyboard.KEY_C) {
+                    isCopy = true;
+                } else if (keyCode == org.lwjgl.input.Keyboard.KEY_A) {
+                    isSelectAll = true;
                 }
             }
             
@@ -125,6 +131,18 @@ public class TabStatsGui extends GuiScreen {
                 } catch (Exception e) {
                     // Ignore clipboard errors
                 }
+            } else if (isCopy) {
+                // Copy the actual API key to clipboard
+                try {
+                    java.awt.datatransfer.StringSelection selection = new java.awt.datatransfer.StringSelection(actualApiKey);
+                    java.awt.Toolkit.getDefaultToolkit().getSystemClipboard().setContents(selection, null);
+                } catch (Exception e) {
+                    // Ignore clipboard errors
+                }
+            } else if (isSelectAll) {
+                // Select all text in the field
+                this.apiField.setCursorPositionZero();
+                this.apiField.setSelectionPos(this.apiField.getText().length());
             } else if (keyCode == 14) { // Backspace
                 if (actualApiKey.length() > 0) {
                     actualApiKey = actualApiKey.substring(0, actualApiKey.length() - 1);
