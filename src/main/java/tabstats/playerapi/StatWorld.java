@@ -96,7 +96,7 @@ public class StatWorld {
 
                     hPlayer.addGames(bw, duels);
                 } catch (PlayerNullException | ApiRequestException | InvalidKeyException | BadJsonException ex) {
-                    this.addPlayer(uuid, hPlayer);
+                    // Don't add player to list when API fails - this preserves original rank colors
                     this.removeFromStatAssembly(uuid);
                     return;
                 }
