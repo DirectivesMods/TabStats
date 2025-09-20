@@ -16,6 +16,7 @@ import static tabstats.config.ModConfigNames.APIKEY;
 
 public class ModConfig {
     private String apiKey;
+    private String lastApiKey; // Track the last API key to detect changes
     private static ModConfig instance;
 
     public static ModConfig getInstance() {
@@ -25,7 +26,33 @@ public class ModConfig {
     }
 
     public String getApiKey() {
+        // Always reload the API key from file to ensure we get the latest value
+        if (getFile().exists()) {
+            String freshApiKey = getString(APIKEY);
+            if (freshApiKey != null && !freshApiKey.trim().isEmpty()) {
+                // Check if API key has changed
+                if (lastApiKey != null && !lastApiKey.equals(freshApiKey)) {
+                    System.out.println("TabStats: API key changed - clearing cached player data");
+                    onApiKeyChanged();
+                }
+                this.lastApiKey = freshApiKey;
+                this.apiKey = freshApiKey;
+                return freshApiKey;
+            }
+        }
         return apiKey;
+    }
+
+    private void onApiKeyChanged() {
+        // Clear cached player data when API key changes
+        try {
+            tabstats.TabStats tabStats = tabstats.TabStats.getTabStats();
+            if (tabStats != null && tabStats.getStatWorld() != null) {
+                tabStats.getStatWorld().refreshAllPlayers();
+            }
+        } catch (Exception e) {
+            System.out.println("TabStats: Error clearing cache on API key change: " + e.getMessage());
+        }
     }
 
     public void setApiKey(String key) {

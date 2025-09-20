@@ -18,9 +18,12 @@ import java.io.StringWriter;
 import java.nio.charset.StandardCharsets;
 
 public class HypixelAPI {
-    private final String key = ModConfig.getInstance().getApiKey();
     public JsonObject achievementObj;
     public JsonObject playerObject;
+
+    private String getApiKey() {
+        return ModConfig.getInstance().getApiKey();
+    }
 
     /**
      * @param uuid Target player's UUID
@@ -36,10 +39,11 @@ public class HypixelAPI {
      */
     public JsonObject getWholeObject(String uuid) throws InvalidKeyException, PlayerNullException, ApiRequestException, BadJsonException {
         JsonObject obj = new JsonObject();
-        if (key == null) {
+        String apiKey = getApiKey();
+        if (apiKey == null || apiKey.trim().isEmpty()) {
             throw new InvalidKeyException();
         } else {
-            String requestURL = String.format("https://api.hypixel.net/player?key=%s&uuid=%s", key, uuid.replace("-", ""));
+            String requestURL = String.format("https://api.hypixel.net/player?key=%s&uuid=%s", apiKey, uuid.replace("-", ""));
             try (CloseableHttpClient client = HttpClients.createDefault()) {
                 HttpGet request = new HttpGet(requestURL);
                 JsonParser parser = new JsonParser();
