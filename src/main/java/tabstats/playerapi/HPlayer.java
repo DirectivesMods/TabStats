@@ -49,7 +49,7 @@ public class HPlayer {
     public HPlayer(String playerUUID, String playerName) {
         this.playerUUID = playerUUID;
         this.playerName = playerName;
-        this.playerRank = "§7";;
+        this.playerRank = "§7";
 
         this.gameMap = new HashMap<>();
     }
@@ -94,7 +94,7 @@ public class HPlayer {
     }
 
     public void setPlayerRank(JsonObject playerObject) {
-        String s = "", staff, rank = "", rankColour, mvpPlusPlus;
+        String s = "§7", staff, rank = "", rankColour, mvpPlusPlus;  // Default to gray for non-ranked players
         JsonObject player = playerObject.getAsJsonObject();
 
         try {
@@ -110,13 +110,15 @@ public class HPlayer {
         try {
             rank = player.get("newPackageRank").getAsString();
         } catch (NullPointerException e) {
-            s = ChatColor.GRAY + "";  // No rank display for non-ranked players
+            rank = "";  // No rank for non-ranked players
         }
         try {
             rankColour = player.get("rankPlusColor").getAsString();
         } catch (Exception e) {
             rankColour = "RED";
         }
+        
+        // Only change from default gray if player actually has a rank
         if (mvpPlusPlus.equalsIgnoreCase("SUPERSTAR")) {
             s = ChatColor.GOLD + "[MVP" + ChatColor.valueOf(rankColour) + "++" + ChatColor.GOLD + "] ";
         } else if (!mvpPlusPlus.equalsIgnoreCase("SUPERSTAR")) {
@@ -129,7 +131,10 @@ public class HPlayer {
             } else if (rank.equalsIgnoreCase("VIP")) {
                 s = ChatColor.GREEN + "[VIP] ";
             }
+            // If no rank matches, keep default gray color (s = "§7")
         }
+        
+        // Staff ranks override everything
         try {
             if (staff.equalsIgnoreCase("HELPER")) {
                 s = ChatColor.BLUE + "[HELPER] ";
