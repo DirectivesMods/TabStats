@@ -3,6 +3,7 @@ package tabstats.playerapi;
 import tabstats.playerapi.api.games.HGameBase;
 import tabstats.playerapi.api.stats.Stat;
 import tabstats.util.ChatColor;
+import tabstats.util.NickDetector;
 import com.google.gson.JsonObject;
 
 import java.util.ArrayList;
@@ -49,7 +50,7 @@ public class HPlayer {
     public HPlayer(String playerUUID, String playerName) {
         this.playerUUID = playerUUID;
         this.playerName = playerName;
-        this.playerRank = "§7";
+        this.playerRank = ChatColor.GRAY.toString();
 
         this.gameMap = new HashMap<>();
     }
@@ -87,14 +88,17 @@ public class HPlayer {
 
     public void setNicked(boolean nicked) { this.nicked = nicked; }
 
-    public boolean isNicked() { return this.nicked; }
+    public boolean isNicked() { 
+        // Use the precomputed nick flag set during player processing (UUID v1 + known skin)
+        return this.nicked;
+    }
 
     public void setPlayerRank(String playerRank) {
         this.playerRank = playerRank;
     }
 
     public void setPlayerRank(JsonObject playerObject) {
-        String s = "§7";  // Default to gray for non-ranked players
+        String s = ChatColor.GRAY.toString();  // Default to gray for non-ranked players
         String staff = "NOT STAFF", rank = "", rankColour = "RED", mvpPlusPlus = "NEVER BROUGHT";
         JsonObject player = playerObject.getAsJsonObject();
 
@@ -156,11 +160,18 @@ public class HPlayer {
     }
 
     public String getPlayerRank() {
-        return this.playerRank == null || this.playerRank.isEmpty() ? "§7" : this.playerRank;
+        String baseRank = this.playerRank == null || this.playerRank.isEmpty() ? ChatColor.GRAY.toString() : this.playerRank;
+        
+        // If player is detected as nicked, prepend nick indicator
+        if (isNicked()) {
+            return ChatColor.WHITE + "[" + ChatColor.RED + "NICKED" + ChatColor.WHITE + "] " + baseRank;
+        }
+        
+        return baseRank;
     }
 
     public String getPlayerRankColor() {
-        return this.playerRank == null || this.playerRank.isEmpty() ? "§7" : this.playerRank.substring(0, 2);
+        return this.playerRank == null || this.playerRank.isEmpty() ? ChatColor.GRAY.toString() : this.playerRank.substring(0, 2);
     }
 
     public HGameBase getGame(String gameName) {

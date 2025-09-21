@@ -35,6 +35,17 @@ try {
 ```
 Used throughout config file I/O, API requests, and JSON parsing.
 
+### Nick Detection System
+**Full nick detection (UUID + skin hash)**
+- **`NickDetector.java`** stores a set of known nick skin hashes and helpers: `isNickedUuid(uuid)`, `isKnownNickedSkin(hash)`, `extractSkinHash(url)`, and `isPlayerNicked(uuid, hash)`.
+- **Logic**: A player is marked nicked only if BOTH are true:
+    - UUID version is 1 (version 4 = real)
+    - Skin hash matches the known nick skins list
+- **Integration**:
+    - `StatWorld.fetchStats()` decodes the player's GameProfile textures (base64), extracts the skin URL, derives the hash, and evaluates nick status using `NickDetector`.
+    - `HPlayer.isNicked()` simply returns the precomputed flag. Rendering adds `[NICKED]` via `ChatColor`.
+- **Notes**: Silent-fails on parsing/decoding; never attempts denicking (no name resolution), only displays nick status.
+
 ### Configuration Management
 - API key auto-reloads from file on each `getApiKey()` call
 - File structure: `{"ApiKey": "uuid-format-key"}` 
@@ -78,3 +89,4 @@ Used throughout config file I/O, API requests, and JSON parsing.
 - **Player detection**: UUID version 4 = real players, version 1 = nicked players  
 - **Cache management**: 5-second existence check before API fetching
 - **Error types**: `InvalidKeyException`, `PlayerNullException`, `GameNullException`, `BadJsonException`
+- **Nick detection**: UUID version analysis runs during player processing for simple nick identification

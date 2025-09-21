@@ -8,6 +8,13 @@ import tabstats.playerapi.exception.BadJsonException;
 import tabstats.playerapi.exception.InvalidKeyException;
 import tabstats.playerapi.exception.PlayerNullException;
 import tabstats.util.Handler;
+import tabstats.util.NickDetector;
+import com.mojang.authlib.GameProfile;
+import com.mojang.authlib.properties.Property;
+import java.util.Base64;
+import com.google.gson.JsonElement;
+import com.google.gson.JsonObject;
+import com.google.gson.JsonParser;
 import com.google.gson.JsonObject;
 import net.minecraft.entity.player.EntityPlayer;
 
@@ -19,6 +26,8 @@ public class StatWorld {
     protected final List<UUID> statAssembly = new ArrayList<>();
     protected final List<UUID> existedMoreThan5Seconds = new ArrayList<>();
     protected final Map<UUID, Integer> timeCheck = new HashMap<>();
+    // Track retries for nick detection similar to script waiting up to ~200 ticks when name has no color
+    protected final Map<UUID, Integer> nickRetryTicks = new HashMap<>();
 
     public StatWorld() {
         worldPlayers = new ConcurrentHashMap<>();
@@ -37,6 +46,7 @@ public class StatWorld {
         statAssembly.clear();
         existedMoreThan5Seconds.clear();
         timeCheck.clear();
+        nickRetryTicks.clear();
     }
 
     public void refreshAllPlayers() {
@@ -50,6 +60,7 @@ public class StatWorld {
         statAssembly.remove(uuid);
         existedMoreThan5Seconds.remove(uuid);
         timeCheck.remove(uuid);
+        nickRetryTicks.remove(uuid);
     }
 
     public ConcurrentHashMap<UUID, HPlayer> getWorldPlayers() {
@@ -76,7 +87,24 @@ public class StatWorld {
             UUID uuid = entityPlayer.getUniqueID();
             String playerName = entityPlayer.getName();
             String playerUUID = entityPlayer.getUniqueID().toString().replace("-", "");
-            boolean nicked = uuid.version() == 1;
+
+            // Attempt to extract skin hash from the player's GameProfile textures
+            String skinHash = extractSkinHashFromEntity(entityPlayer);
+
+            boolean nicked = NickDetector.isPlayerNicked(playerUUID, skinHash);
+            if (!nicked && NickDetector.isNickedUuid(playerUUID)) {
+                // If UUID indicates possible nick but skin hash isn't matched yet, retry up to 200 ticks
+                int ticks = nickRetryTicks.merge(uuid, 1, (a,b)->a+b);
+                if (ticks < 200) {
+                    // Requeue a lightweight retry
+                    Handler.asExecutor(() -> fetchStats(entityPlayer));
+                    return;
+                } else {
+                    nickRetryTicks.remove(uuid);
+                }
+            } else {
+                nickRetryTicks.remove(uuid);
+            }
 
             HPlayer hPlayer = new HPlayer(playerUUID, playerName);
             hPlayer.setNicked(nicked);
@@ -102,5 +130,24 @@ public class StatWorld {
             this.addPlayer(uuid, hPlayer);
             this.removeFromStatAssembly(uuid);
         });
+    }
+
+    protected String extractSkinHashFromEntity(EntityPlayer entityPlayer) {
+        try {
+            GameProfile profile = entityPlayer.getGameProfile();
+            Property textures = profile.getProperties().get("textures").stream().findFirst().orElse(null);
+            if (textures == null) return null;
+            String json = new String(Base64.getDecoder().decode(textures.getValue()), "UTF-8");
+            JsonObject root = new JsonParser().parse(json).getAsJsonObject();
+            if (!root.has("textures")) return null;
+            JsonObject texturesObj = root.getAsJsonObject("textures");
+            if (!texturesObj.has("SKIN")) return null;
+            JsonObject skinObj = texturesObj.getAsJsonObject("SKIN");
+            if (!skinObj.has("url")) return null;
+            String url = skinObj.get("url").getAsString();
+            return NickDetector.extractSkinHash(url);
+        } catch (Exception ignored) {
+            return null;
+        }
     }
 }

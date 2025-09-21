@@ -169,7 +169,12 @@ public class StatsTab extends GuiPlayerTabOverlay {
                 HPlayer hPlayer = TabStats.getTabStats().getStatWorld().getPlayerByUUID(gameProfile.getId());
                 if (hPlayer != null) {
                     /* render tabstats here */
-                    name = name.contains(ChatColor.OBFUSCATE.toString()) ? hPlayer.getPlayerRankColor() + hPlayer.getPlayerName() : this.getHPlayerName(playerInfo, hPlayer);
+                    if (hPlayer.isNicked()) {
+                        // Always display nicked players as "[NICKED] <nick>" (nick in red) regardless of obfuscation or team formatting
+                        name = ChatColor.WHITE + "[" + ChatColor.RED + "NICKED" + ChatColor.WHITE + "] " + ChatColor.RED + gameProfile.getName();
+                    } else {
+                        name = name.contains(ChatColor.OBFUSCATE.toString()) ? hPlayer.getPlayerRankColor() + hPlayer.getPlayerName() : this.getHPlayerName(playerInfo, hPlayer);
+                    }
 
                     /* gets bedwars if the gamemode is not a game added to the hplayer's game list, otherwise, grab the game stats based on the scoreboard */
                     List<Stat> statList = hPlayer.getFormattedGameStats(gamemode) == null ? hPlayer.getFormattedGameStats("BEDWARS") : hPlayer.getFormattedGameStats(gamemode);
@@ -309,6 +314,11 @@ public class StatsTab extends GuiPlayerTabOverlay {
     public String getHPlayerName(NetworkPlayerInfo playerInfo, HPlayer hPlayer) {
         ScorePlayerTeam team = playerInfo.getPlayerTeam();
         String playerRank = hPlayer.getPlayerRank();
+
+        // If the player is nicked, force the display format to "[NICKED] <nick>" and color name red
+        if (hPlayer.isNicked()) {
+            return ChatColor.WHITE + "[" + ChatColor.RED + "NICKED" + ChatColor.WHITE + "] " + ChatColor.RED + playerInfo.getGameProfile().getName();
+        }
 
         if (team != null) {
             /** remove [NON] as it's not shown in regular tab */
