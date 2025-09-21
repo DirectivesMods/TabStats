@@ -69,6 +69,9 @@ logs/
 crash-reports/
 .mixin.out/
 
+# Essential Loom specific
+.gradle/loom-cache/
+
 # Fabric/Quilt
 remappedSrc/
 .fabric/
@@ -90,6 +93,11 @@ tmp/
 config/secrets.properties
 api-keys.txt
 hypixel-api-key.txt
+
+# TabStats specific configuration
+tabstats/
+.minecraft/tabstats/
+apikey.json
 
 # User-specific configuration files
 user.properties
