@@ -170,8 +170,8 @@ public class StatsTab extends GuiPlayerTabOverlay {
                 if (hPlayer != null) {
                     /* render tabstats here */
                     if (hPlayer.isNicked()) {
-                        // Always display nicked players as "[NICKED] <nick>" (nick in red) regardless of obfuscation or team formatting
-                        name = ChatColor.WHITE + "[" + ChatColor.RED + "NICKED" + ChatColor.WHITE + "] " + ChatColor.RED + gameProfile.getName();
+                        // Always display nicked players as "[NICKED] <nick>" (nick in white) regardless of obfuscation or team formatting
+                        name = ChatColor.WHITE + "[" + ChatColor.RED + "NICKED" + ChatColor.WHITE + "] " + ChatColor.WHITE + gameProfile.getName();
                     } else {
                         name = name.contains(ChatColor.OBFUSCATE.toString()) ? hPlayer.getPlayerRankColor() + hPlayer.getPlayerName() : this.getHPlayerName(playerInfo, hPlayer);
                     }
@@ -315,9 +315,9 @@ public class StatsTab extends GuiPlayerTabOverlay {
         ScorePlayerTeam team = playerInfo.getPlayerTeam();
         String playerRank = hPlayer.getPlayerRank();
 
-        // If the player is nicked, force the display format to "[NICKED] <nick>" and color name red
+        // If the player is nicked, force the display format to "[NICKED] <nick>" and color name white
         if (hPlayer.isNicked()) {
-            return ChatColor.WHITE + "[" + ChatColor.RED + "NICKED" + ChatColor.WHITE + "] " + ChatColor.RED + playerInfo.getGameProfile().getName();
+            return ChatColor.WHITE + "[" + ChatColor.RED + "NICKED" + ChatColor.WHITE + "] " + ChatColor.WHITE + playerInfo.getGameProfile().getName();
         }
 
         if (team != null) {
