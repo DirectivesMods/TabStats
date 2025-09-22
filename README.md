@@ -16,6 +16,7 @@ Discord: [https://discord.gg/F9pQmx37XJ](https://discord.gg/F9pQmx37XJ)
 **Currently Supported Gamemodes:**
 - Bedwars
 - Duels
+- Skywars
 
 **Contributors:** (love these guys)
 - @exejar
@@ -23,5 +24,6 @@ Discord: [https://discord.gg/F9pQmx37XJ](https://discord.gg/F9pQmx37XJ)
 - @DirectivesMods
 
 **Info:**
+- This project is not affiliated or endorsed by Hypixel
 - Your API key is stored in .minecraft/tabstats/apikey.json and you can update it manually from there
 - No, this does not work on Lunar (yet) - if someone wants to port it to Weave you may
