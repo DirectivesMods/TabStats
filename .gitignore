@@ -95,8 +95,8 @@ api-keys.txt
 hypixel-api-key.txt
 
 # TabStats specific configuration
-tabstats/
-.minecraft/tabstats/
+/.minecraft/tabstats/
+/tabstats/
 apikey.json
 
 # User-specific configuration files
