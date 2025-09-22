@@ -112,6 +112,13 @@ tasks {
     }
 }
 
+// Optional local install task for copying jars to a personal mods folder.
+// To use without committing OS-specific paths, create 'install.local.gradle.kts' in the project root.
+// This file is ignored by git (see .gitignore). If it exists, we apply it here.
+if (file("install.local.gradle.kts").exists()) {
+    apply(from = "install.local.gradle.kts")
+}
+
 kotlin {
     jvmToolchain {
         check(this is JavaToolchainSpec)

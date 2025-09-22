@@ -138,3 +138,6 @@ dependencies/
 .env
 .env.local
 .env.*.local
+
+# Local Gradle overrides (per-developer install script)
+install.local.gradle.kts
