@@ -6,6 +6,7 @@ import net.minecraft.command.CommandException;
 import net.minecraft.command.ICommandSender;
 
 import java.util.Arrays;
+import java.util.Collections;
 import java.util.List;
 
 public class TabStatsCommand extends CommandBase {
@@ -41,8 +42,8 @@ public class TabStatsCommand extends CommandBase {
     }
     
     @Override
-    @SuppressWarnings("unchecked")
-    public List addTabCompletionOptions(ICommandSender sender, String[] args, net.minecraft.util.BlockPos pos) {
-        return null;
+    public List<String> addTabCompletionOptions(ICommandSender sender, String[] args, net.minecraft.util.BlockPos pos) {
+        // No tab completions for this command currently
+        return Collections.emptyList();
     }
 }

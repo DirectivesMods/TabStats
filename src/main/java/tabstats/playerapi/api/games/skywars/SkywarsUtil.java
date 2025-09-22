@@ -3,6 +3,9 @@ package tabstats.playerapi.api.games.skywars;
 import tabstats.playerapi.api.games.HGameBase;
 import tabstats.playerapi.api.stats.StatInt;
 import tabstats.util.ChatColor;
+import java.util.Collections;
+import java.util.HashMap;
+import java.util.Map;
 
 public abstract class SkywarsUtil extends HGameBase {
     public SkywarsUtil(String playerName, String playerUUID) {
@@ -106,7 +109,93 @@ public abstract class SkywarsUtil extends HGameBase {
     }
 
     public String getStarWithColor(int level) {
-        // Use the eight-pointed star used elsewhere (renders correctly in 1.8.9 fonts)
-        return getStarColor(level) + Integer.toString(level) + "\u272B"; // ✫
+        // SkyWars default glyph per user preference
+        return getStarColor(level) + Integer.toString(level) + "\u272F"; // ✯
+    }
+
+    /* Emblem mapping */
+    private static final Map<String, String> EMBLEM_MAP;
+    static {
+        Map<String, String> m = new HashMap<String, String>();
+        // Exact IDs → glyphs (from user-provided list)
+        m.put("emblem_default", "✯");
+        m.put("emblem_alpha", "α");
+        m.put("emblem_omega", "Ω");
+        m.put("emblem_rich", "$");
+        m.put("emblem_podium", "π");
+        m.put("emblem_crossed_swords", "⚔");
+        m.put("emblem_null_icon", "∅");
+        m.put("emblem_delta_icon", "δ");
+        m.put("emblem_sigma_icon", "Σ");
+        m.put("emblem_florin", "ƒ");
+        m.put("emblem_fallen_crest", "☬");
+        m.put("emblem_angel_1", "★");
+        m.put("emblem_angel_2", "☆");
+        m.put("emblem_angel_3", "☼");
+        m.put("emblem_angel_4", "✶");
+        m.put("emblem_angel_5", "✳");
+        m.put("emblem_angel_6", "✴");
+        m.put("emblem_angel_7", "✷");
+        m.put("emblem_angel_8", "❋");
+        m.put("emblem_angel_9", "✼");
+        m.put("emblem_angel_10", "❂");
+        m.put("emblem_angel_11", "❁");
+        m.put("emblem_small_star", "⋆");
+        m.put("emblem_star", "✯");
+        m.put("emblem_greek_cross", "✙");
+        m.put("emblem_heart", "❤");
+        m.put("emblem_skull", "☠");
+        m.put("emblem_four_points", "✦");
+        m.put("emblem_peace_out", "✌");
+        m.put("emblem_floral_heart", "❦");
+        m.put("emblem_eight_pointed_pinwheel", "✵");
+        m.put("emblem_heart_exclamation", "❣");
+        m.put("emblem_yin_yang", "☯");
+        m.put("emblem_yin_and_yang", "☯");
+        m.put("emblem_formerly_known", "@_@");
+        m.put("emblem_sixteen_pointed_asterisk", "✺");
+        m.put("emblem_airplane", "✈");
+        m.put("emblem_coffin", "⚰");
+        m.put("emblem_maltese_cross", "✠");
+        m.put("emblem_queen", "♕");
+        m.put("emblem_bolt", "⚡");
+        m.put("emblem_reflex_angle_eyebrows", "δvδ");
+        m.put("emblem_asterism", "⁂");
+        m.put("emblem_shadowed_star", "✰");
+        m.put("emblem_stacked_asterisks", "⁑");
+        m.put("emblem_radioactive", "☢");
+        m.put("emblem_four_clubs", "✥");
+        m.put("emblem_rocket", "♝");
+        m.put("emblem_neptune", "♆");
+        m.put("emblem_circled_star", "⍟");
+        m.put("emblem_bishop", "♗");
+        m.put("emblem_king", "♔");
+        m.put("emblem_knight", "♞");
+        m.put("emblem_pencil", "✏");
+        m.put("emblem_heavy_sparkle", "❈");
+        m.put("emblem_carrrots_for_eyes", "^_^");
+        m.put("emblem_same_great_taste", "ಠ_ಠ");
+        m.put("emblem_misaligned", "o...0");
+        m.put("emblem_converge_on_tongue", ">u<");
+        m.put("emblem_no_evil", "v-v");
+        m.put("emblem_three_fourths_jam", "༼つ◕_◕༽つ");
+        m.put("emblem_slime", "■·■");
+        m.put("emblem_cloud", "☁");
+        EMBLEM_MAP = Collections.unmodifiableMap(m);
+    }
+
+    public String mapEmblemGlyph(String emblemId) {
+        try {
+            if (emblemId == null || emblemId.isEmpty()) return null;
+            String key = emblemId.trim();
+            String exact = EMBLEM_MAP.get(key);
+            if (exact != null) return exact;
+            // Some APIs might return uppercase; try lowercase pass
+            exact = EMBLEM_MAP.get(key.toLowerCase());
+            if (exact != null) return exact;
+            return null;
+        } catch (Exception ignored) {
+            return null;
+        }
     }
 }
