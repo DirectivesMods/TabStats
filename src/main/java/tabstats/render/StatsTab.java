@@ -177,7 +177,10 @@ public class StatsTab extends GuiPlayerTabOverlay {
                     }
 
                     /* gets bedwars if the gamemode is not a game added to the hplayer's game list, otherwise, grab the game stats based on the scoreboard */
-                    List<Stat> statList = hPlayer.getFormattedGameStats(gamemode) == null ? hPlayer.getFormattedGameStats("BEDWARS") : hPlayer.getFormattedGameStats(gamemode);
+                    List<Stat> statList = hPlayer.getFormattedGameStats(gamemode);
+                    if (statList == null || statList.isEmpty()) {
+                        statList = hPlayer.getFormattedGameStats("BEDWARS");
+                    }
                     /* start at the first stat */
                     int valueXSpacer = startingX + this.mc.fontRendererObj.getStringWidth(ChatColor.BOLD + "[YOUTUBE] WWWWWWWWWWWWWWWW") + 10 + headSize + 2;
 

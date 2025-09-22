@@ -29,7 +29,7 @@ public class GameOverlayListener {
 
             String gamemode = "BEDWARS";
             if (scoreboard.getObjectiveInDisplaySlot(1) != null) {
-                gamemode = ChatColor.stripColor(scoreboard.getObjectiveInDisplaySlot(1).getDisplayName()).replace(" ", "");
+                gamemode = ChatColor.stripColor(scoreboard.getObjectiveInDisplaySlot(1).getDisplayName()).replace(" ", "").toUpperCase();
             }
 
             HPlayer theHPlayer = TabStats.getTabStats().getStatWorld().getPlayerByUUID(Minecraft.getMinecraft().thePlayer.getUniqueID());

@@ -1,6 +1,6 @@
 package tabstats.playerapi.api.games.duels;
 
-/* custom enum for duels api retrieval because the api is embarrassing, and probably made by a 10 year old. */
+/* custom enum for duels api retrieval*/
 public enum DuelsModes {
     ALL_MODES("Overall", "", "current_winstreak", "best_overall_winstreak", "wins", "losses", "kills", "deaths"),
     OVERALL("Overall", "", "current_winstreak", "best_overall_winstreak", "wins", "losses", "kills", "deaths"),

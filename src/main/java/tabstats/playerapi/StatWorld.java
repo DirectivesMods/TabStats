@@ -3,6 +3,7 @@ package tabstats.playerapi;
 import tabstats.playerapi.api.HypixelAPI;
 import tabstats.playerapi.api.games.bedwars.Bedwars;
 import tabstats.playerapi.api.games.duels.Duels;
+import tabstats.playerapi.api.games.skywars.Skywars;
 import tabstats.playerapi.exception.ApiRequestException;
 import tabstats.playerapi.exception.BadJsonException;
 import tabstats.playerapi.exception.InvalidKeyException;
@@ -87,13 +88,12 @@ public class StatWorld {
             UUID uuid = entityPlayer.getUniqueID();
             String playerName = entityPlayer.getName();
             String playerUUID = entityPlayer.getUniqueID().toString().replace("-", "");
-            String playerUUIDWithDashes = entityPlayer.getUniqueID().toString(); // Keep dashes for nick detection
 
             // Attempt to extract skin hash from the player's GameProfile textures
             String skinHash = extractSkinHashFromEntity(entityPlayer);
 
-            boolean nicked = NickDetector.isPlayerNicked(playerUUIDWithDashes, skinHash);
-            if (!nicked && NickDetector.isNickedUuid(playerUUIDWithDashes)) {
+            boolean nicked = NickDetector.isPlayerNicked(playerUUID, skinHash);
+            if (!nicked && NickDetector.isNickedUuid(playerUUID)) {
                 // If UUID indicates possible nick but skin hash isn't matched yet, retry up to 200 ticks
                 int ticks = nickRetryTicks.merge(uuid, 1, (a,b)->a+b);
                 if (ticks < 200) {
@@ -120,8 +120,9 @@ public class StatWorld {
 
                     Bedwars bw = new Bedwars(playerName, playerUUID, wholeObject);
                     Duels duels = new Duels(playerName, playerUUID, wholeObject);
+                    Skywars sw = new Skywars(playerName, playerUUID, wholeObject);
 
-                    hPlayer.addGames(bw, duels);
+                    hPlayer.addGames(bw, duels, sw);
                 } catch (PlayerNullException | ApiRequestException | InvalidKeyException | BadJsonException ex) {
                     this.removeFromStatAssembly(uuid);
                     return;
