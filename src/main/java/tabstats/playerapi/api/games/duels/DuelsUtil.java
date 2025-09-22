@@ -14,7 +14,12 @@ public abstract class DuelsUtil extends HGameBase {
     }
 
     public double getWlr(Duels duels) {
-        return this.formatDouble(((StatInt)duels.wins).getValue(), ((StatInt)duels.losses).getValue());
+        try {
+            if (duels == null || duels.wins == null || duels.losses == null) return 0D;
+            return this.formatDouble(((StatInt)duels.wins).getValue(), ((StatInt)duels.losses).getValue());
+        } catch (Exception ignored) {
+            return 0D;
+        }
     }
 
     public ChatColor getWlrColor(double wlr) {

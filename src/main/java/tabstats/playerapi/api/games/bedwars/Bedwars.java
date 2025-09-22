@@ -88,11 +88,20 @@ public class Bedwars extends BedwarsUtil {
     /* retrieves the formatted stat list */
     @Override
     public List<Stat> getFormattedStatList() {
-
-
         List<Stat> returnList = new ArrayList<>(this.formattedStatList);
+
+        // If nicked or no data, return minimal safe list
+        if (this.isNicked) {
+            return returnList; // constructor already added NICKED marker
+        }
+        if (!this.hasPlayed || this.bedwarsJson == null) {
+            return returnList; // nothing more to add safely
+        }
+
+        int starVal = 0;
+        try { if (this.star != null) starVal = ((StatInt)this.star).getValue(); } catch (Exception ignored) {}
         StatString star = new StatString("Star");
-        star.setValue(this.getStarWithColor(((StatInt)this.star).getValue()));
+        star.setValue(this.getStarWithColor(starVal));
         returnList.add(0, star);
         return returnList;
     }

@@ -76,9 +76,23 @@ public class Duels extends DuelsUtil {
     @Override
     public List<Stat> getFormattedStatList() {
         List<Stat> statList = new ArrayList<>(this.formattedStatList);
-        StatString title = new StatString("TITLE                      ");
-        title.setValue(this.getFormattedTitle(this));
-        statList.add(0, title);
+
+        // If player is nicked or has no data, return minimal safe list
+        if (this.isNicked) {
+            return statList; // already contains NICKED marker from constructor
+        }
+        if (!this.hasPlayed || this.duelJson == null) {
+            statList.add(new StatString("WLR", ChatColor.GRAY + "0"));
+            return statList;
+        }
+
+        // Safely build title row
+        try {
+            StatString title = new StatString("TITLE                      ");
+            String tVal = this.getFormattedTitle(this);
+            title.setValue(tVal == null ? "N/A" : tVal);
+            statList.add(0, title);
+        } catch (Exception ignored) { /* silent-fail */ }
 
         return statList;
     }

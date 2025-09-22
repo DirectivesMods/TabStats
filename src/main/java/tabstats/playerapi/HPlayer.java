@@ -83,7 +83,14 @@ public class HPlayer {
     }
 
     public List<Stat> getFormattedGameStats(String gameName) {
-        return this.gameMap.get(gameName) == null ? new ArrayList<>() : this.gameMap.get(gameName).getFormattedStatList();
+        try {
+            HGameBase game = this.gameMap == null ? null : this.gameMap.get(gameName);
+            if (game == null) return new ArrayList<>();
+            List<Stat> list = game.getFormattedStatList();
+            return list == null ? new ArrayList<>() : list;
+        } catch (Exception ignored) {
+            return new ArrayList<>();
+        }
     }
 
     public void setNicked(boolean nicked) { this.nicked = nicked; }

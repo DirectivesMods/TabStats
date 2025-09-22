@@ -15,7 +15,12 @@ public abstract class BedwarsUtil extends HGameBase {
     }
 
     public double getFkdr(Bedwars bw) {
-        return this.formatDouble(((StatInt)bw.finalKills).getValue(), ((StatInt)bw.finalDeaths).getValue());
+        try {
+            if (bw == null || bw.finalKills == null || bw.finalDeaths == null) return 0D;
+            return this.formatDouble(((StatInt)bw.finalKills).getValue(), ((StatInt)bw.finalDeaths).getValue());
+        } catch (Exception ignored) {
+            return 0D;
+        }
     }
 
     public ChatColor getFkdrColor(double fkdr) {
@@ -30,7 +35,12 @@ public abstract class BedwarsUtil extends HGameBase {
     }
 
     public double getWlr(Bedwars bw) {
-        return this.formatDouble(((StatInt)bw.wins).getValue(), ((StatInt)bw.losses).getValue());
+        try {
+            if (bw == null || bw.wins == null || bw.losses == null) return 0D;
+            return this.formatDouble(((StatInt)bw.wins).getValue(), ((StatInt)bw.losses).getValue());
+        } catch (Exception ignored) {
+            return 0D;
+        }
     }
 
     public ChatColor getWlrColor(double wlr) {
@@ -45,7 +55,12 @@ public abstract class BedwarsUtil extends HGameBase {
     }
 
     public double getBblr(Bedwars bw) {
-        return this.formatDouble(((StatInt)bw.bedsBroken).getValue(), ((StatInt)bw.bedsLost).getValue());
+        try {
+            if (bw == null || bw.bedsBroken == null || bw.bedsLost == null) return 0D;
+            return this.formatDouble(((StatInt)bw.bedsBroken).getValue(), ((StatInt)bw.bedsLost).getValue());
+        } catch (Exception ignored) {
+            return 0D;
+        }
     }
 
     public ChatColor getBblrColor(double bblr) {
