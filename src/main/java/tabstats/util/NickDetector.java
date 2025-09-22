@@ -181,15 +181,34 @@ public class NickDetector {
     }
 
     /**
-     * Determines if a player is nicked based on both UUID version and skin hash
+     * Determines if a player is nicked based on UUID version and skin hash
+     * Following the logic from the original script:
+     * - If UUID is not version 1, player is definitely not nicked
+     * - If UUID is version 1 AND skin hash is in known nicks, player is nicked
+     * - If UUID is version 1 but no skin hash available, assume nicked (for safety)
      * @param uuid The player's UUID string
      * @param skinHash The player's skin hash
-     * @return true if the player is nicked (both UUID version 1 AND known nick skin), false otherwise
+     * @return true if the player is nicked, false otherwise
      */
     public static boolean isPlayerNicked(String uuid, String skinHash) {
-        // A player is nicked only if BOTH conditions are met:
-        // 1. UUID version is 1 (nicked UUID)
-        // 2. Skin hash matches a known nick skin
-        return isNickedUuid(uuid) && isKnownNickedSkin(skinHash);
+        // If UUID is not version 1, definitely not nicked
+        if (!isNickedUuid(uuid)) {
+            return false;
+        }
+        
+        // If UUID is version 1 but no skin hash, assume nicked for safety
+        if (skinHash == null || skinHash.isEmpty()) {
+            return true;
+        }
+        
+        // If UUID is version 1 AND skin hash is known nick skin, definitely nicked
+        if (isKnownNickedSkin(skinHash)) {
+            return true;
+        }
+        
+        // UUID is version 1 but skin hash is not in known nicks
+        // This could be a new nick skin we don't know about yet
+        // Based on script behavior, treat as nicked since UUID version is 1
+        return true;
     }
 }

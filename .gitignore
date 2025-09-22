@@ -87,7 +87,7 @@ remappedSrc/
 temp/
 tmp/
 
-# API Keys and Secrets (important for your Hypixel API integration)
+# API Keys and Secrets (important for Hypixel API integration)
 *.key
 *.secret
 config/secrets.properties
@@ -129,7 +129,7 @@ dependencies/
 *.orig
 *.rej
 
-# Database files (if you ever add local storage)
+# Database files (if local storage is ever added)
 *.db
 *.sqlite
 *.sqlite3

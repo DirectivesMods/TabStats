@@ -87,12 +87,13 @@ public class StatWorld {
             UUID uuid = entityPlayer.getUniqueID();
             String playerName = entityPlayer.getName();
             String playerUUID = entityPlayer.getUniqueID().toString().replace("-", "");
+            String playerUUIDWithDashes = entityPlayer.getUniqueID().toString(); // Keep dashes for nick detection
 
             // Attempt to extract skin hash from the player's GameProfile textures
             String skinHash = extractSkinHashFromEntity(entityPlayer);
 
-            boolean nicked = NickDetector.isPlayerNicked(playerUUID, skinHash);
-            if (!nicked && NickDetector.isNickedUuid(playerUUID)) {
+            boolean nicked = NickDetector.isPlayerNicked(playerUUIDWithDashes, skinHash);
+            if (!nicked && NickDetector.isNickedUuid(playerUUIDWithDashes)) {
                 // If UUID indicates possible nick but skin hash isn't matched yet, retry up to 200 ticks
                 int ticks = nickRetryTicks.merge(uuid, 1, (a,b)->a+b);
                 if (ticks < 200) {
