@@ -81,29 +81,45 @@ public class Skywars extends SkywarsUtil {
     public List<Stat> getFormattedStatList() {
         List<Stat> list = new ArrayList<>(this.formattedStatList);
 
+        // If player is nicked or hasn't played, return minimal safe list
+        if (this.isNicked) {
+            list.add(new StatString("KDR", ChatColor.RED + "NICKED"));
+            return list;
+        }
+        if (!this.hasPlayed || this.skywarsJson == null) {
+            list.add(new StatString("KDR", ChatColor.GRAY + "0"));
+            return list;
+        }
+
         // STAR (first)
         StatString star = new StatString("STAR");
         star.setValue(buildStarDisplay());
         list.add(0, star);
 
-        // KDR
-        StatString kdr = new StatString("KDR");
-        kdr.setValue(this.getKdrColor(this.getKdr(this)).toString() + this.getKdr(this));
-        list.add(kdr);
+    // KDR
+    StatString kdr = new StatString("KDR");
+    double kdrVal = this.getKdr(this);
+    kdr.setValue(this.getKdrColor(kdrVal).toString() + kdrVal);
+    list.add(kdr);
 
-        // KILLS
-        StatString kills = new StatString("KILLS");
-        kills.setValue(this.getKillsColor(((StatInt) this.kills).getValue()).toString() + ((StatInt) this.kills).getValue());
-        list.add(kills);
+    // KILLS
+    StatString kills = new StatString("KILLS");
+    int killsVal = 0;
+    try { if (this.kills != null) killsVal = ((StatInt) this.kills).getValue(); } catch (Exception ignored) {}
+    kills.setValue(this.getKillsColor(killsVal).toString() + killsVal);
+    list.add(kills);
 
-        // WLR
-        StatString wlr = new StatString("WLR");
-        wlr.setValue(this.getWlrColor(this.getWlr(this)).toString() + this.getWlr(this));
-        list.add(wlr);
+    // WLR
+    StatString wlr = new StatString("WLR");
+    double wlrVal = this.getWlr(this);
+    wlr.setValue(this.getWlrColor(wlrVal).toString() + wlrVal);
+    list.add(wlr);
 
         // WINS
         StatString wins = new StatString("WINS");
-        wins.setValue(this.getWinsColor(((StatInt) this.wins).getValue()).toString() + ((StatInt) this.wins).getValue());
+        int winsVal = 0;
+        try { if (this.wins != null) winsVal = ((StatInt) this.wins).getValue(); } catch (Exception ignored) {}
+        wins.setValue(this.getWinsColor(winsVal).toString() + winsVal);
         list.add(wins);
 
         return list;
