@@ -6,7 +6,6 @@ import tabstats.util.ChatColor;
 
 import java.util.HashMap;
 import java.util.Map;
-import java.util.concurrent.ConcurrentHashMap;
 
 public abstract class BedwarsUtil extends HGameBase {
     long starWave = 0;
@@ -99,25 +98,16 @@ public abstract class BedwarsUtil extends HGameBase {
     }
 
     public String getStarWithColor(int star) {
-        String cached = STAR_CACHE.get(star);
-        if (cached != null) {
-            return cached;
-        }
-
         String starString = Integer.toString(star);
 
         PrestigeStyle style = getPrestigeStyle(star);
         if (style != null) {
-            String formatted = formatWithStyle(starString, style) + style.glyphColor + getBedwarsGlyph(star);
-            STAR_CACHE.put(star, formatted);
-            return formatted;
+            return formatWithStyle(starString, style) + style.glyphColor + getBedwarsGlyph(star);
         }
 
         int cycleBasis = star % 1000;
         ChatColor color = getStarColor(cycleBasis);
-        String formatted = color + starString + getBedwarsGlyph(star);
-        STAR_CACHE.put(star, formatted);
-        return formatted;
+        return color + starString + getBedwarsGlyph(star);
     }
 
     private String getBedwarsGlyph(int star) {
@@ -163,7 +153,6 @@ public abstract class BedwarsUtil extends HGameBase {
     }
 
     private static final Map<Integer, PrestigeStyle> PRESTIGE_STYLES = new HashMap<>();
-    private static final ConcurrentHashMap<Integer, String> STAR_CACHE = new ConcurrentHashMap<>();
 
     private String formatWithStyle(String number, PrestigeStyle style) {
         StringBuilder sb = new StringBuilder();

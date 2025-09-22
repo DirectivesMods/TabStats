@@ -98,13 +98,6 @@ public abstract class SkywarsUtil extends HGameBase {
         }
     }
 
-    public int getSkywarsLevelFromExperience(int exp) {
-        // Fallback approximation: community standard is 10,000 XP per level after early levels.
-        // We'll start simple and refine later.
-        if (exp <= 0) return 0;
-        return Math.max(1, exp / 10000);
-    }
-
     public ChatColor getStarColor(int level) {
         if (level < 5) return ChatColor.GRAY;
         if (level < 10) return ChatColor.WHITE;
@@ -119,7 +112,7 @@ public abstract class SkywarsUtil extends HGameBase {
     }
 
     public String getStarWithColor(int level) {
-        // SkyWars default glyph per user preference
+        // SkyWars default glyph
         return getStarColor(level) + Integer.toString(level) + "\u272F"; // ✯
     }
 
@@ -127,7 +120,7 @@ public abstract class SkywarsUtil extends HGameBase {
     private static final Map<String, String> EMBLEM_MAP;
     static {
         Map<String, String> m = new HashMap<String, String>();
-        // Exact IDs → glyphs (from user-provided list)
+        // Exact IDs → glyphs
         m.put("emblem_default", "✯");
         m.put("emblem_alpha", "α");
         m.put("emblem_omega", "Ω");
