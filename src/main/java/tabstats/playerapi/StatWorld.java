@@ -84,53 +84,118 @@ public class StatWorld {
     }
 
     public void fetchStats(EntityPlayer entityPlayer) {
-        Handler.asExecutor(()-> {
+        fetchStatsWithRetry(entityPlayer, 0);
+    }
+    
+    private void fetchStatsWithRetry(EntityPlayer entityPlayer, int apiRetryAttempt) {
+        Handler.asExecutor(() -> {
             UUID uuid = entityPlayer.getUniqueID();
             String playerName = entityPlayer.getName();
             String playerUUID = entityPlayer.getUniqueID().toString().replace("-", "");
 
-            // Attempt to extract skin hash from the player's GameProfile textures
-            String skinHash = extractSkinHashFromEntity(entityPlayer);
-
-            boolean nicked = NickDetector.isPlayerNicked(playerUUID, skinHash);
-            if (!nicked && NickDetector.isNickedUuid(playerUUID)) {
-                // If UUID indicates possible nick but skin hash isn't matched yet, retry up to 200 ticks
-                int ticks = nickRetryTicks.merge(uuid, 1, (a,b)->a+b);
-                if (ticks < 200) {
-                    // Requeue a lightweight retry
-                    Handler.asExecutor(() -> fetchStats(entityPlayer));
-                    return;
-                } else {
-                    nickRetryTicks.remove(uuid);
-                }
-            } else {
-                nickRetryTicks.remove(uuid);
-            }
-
             HPlayer hPlayer = new HPlayer(playerUUID, playerName);
-            hPlayer.setNicked(nicked);
 
-            if (!nicked) {
-                try {
-                    JsonObject wholeObject = new HypixelAPI().getWholeObject(playerUUID);
-                    JsonObject playerObject = wholeObject.get("player").getAsJsonObject();
+            // Fire both API call AND nick detection simultaneously for speed
+            boolean apiSuccess = false;
+            boolean isDefinitelyNicked = false;
+            Exception apiException = null;
+            
+            // 1. Fire API call immediately
+            try {
+                JsonObject wholeObject = new HypixelAPI().getWholeObject(playerUUID);
+                JsonObject playerObject = wholeObject.get("player").getAsJsonObject();
 
-                    hPlayer.setPlayerRank(playerObject);
-                    hPlayer.setPlayerName(playerObject.get("displayname").getAsString());
+                hPlayer.setPlayerRank(playerObject);
+                hPlayer.setPlayerName(playerObject.get("displayname").getAsString());
 
-                    Bedwars bw = new Bedwars(playerName, playerUUID, wholeObject);
-                    Duels duels = new Duels(playerName, playerUUID, wholeObject);
-                    Skywars sw = new Skywars(playerName, playerUUID, wholeObject);
+                Bedwars bw = new Bedwars(playerName, playerUUID, wholeObject);
+                Duels duels = new Duels(playerName, playerUUID, wholeObject);
+                Skywars sw = new Skywars(playerName, playerUUID, wholeObject);
 
-                    hPlayer.addGames(bw, duels, sw);
-                } catch (PlayerNullException | ApiRequestException | InvalidKeyException | BadJsonException ex) {
+                hPlayer.addGames(bw, duels, sw);
+                apiSuccess = true;
+                
+            } catch (PlayerNullException | ApiRequestException | InvalidKeyException | BadJsonException ex) {
+                apiSuccess = false;
+                apiException = ex;
+            }
+            
+            // 2. Fire nick detection immediately (parallel to API)
+            String skinHash = extractSkinHashFromEntity(entityPlayer);
+            isDefinitelyNicked = NickDetector.isPlayerNicked(playerUUID, skinHash);
+
+            // 3. Handle results based on what we got
+            if (apiSuccess) {
+                // API worked - player is definitely real, not nicked (API wouldn't return data for nicked players)
+                hPlayer.setNicked(false);
+                this.addPlayer(uuid, hPlayer);
+                this.removeFromStatAssembly(uuid);
+                nickRetryTicks.remove(uuid);
+                return;
+            }
+            
+            if (isDefinitelyNicked) {
+                // Definitely nicked - display as nicked permanently, never check again
+                hPlayer.setNicked(true);
+                this.addPlayer(uuid, hPlayer);
+                this.removeFromStatAssembly(uuid);
+                nickRetryTicks.remove(uuid);
+                return;
+            }
+            
+            // 4. API failed - handle based on nick uncertainty
+            if (!apiSuccess) {
+                // Don't retry on certain permanent failures
+                if (apiException instanceof InvalidKeyException) {
+                    // Invalid API key - stop everything, don't waste calls
                     this.removeFromStatAssembly(uuid);
                     return;
                 }
+                
+                // If UUID suggests possible nick but we're uncertain about skin, use nick retry system
+                if (NickDetector.isNickedUuid(playerUUID)) {
+                    // Uncertain about nick status - use nick retry system (tick-based)
+                    int ticks = nickRetryTicks.merge(uuid, 1, (a, b) -> a + b);
+                    if (ticks < 200) {
+                        // Retry entire process for nick detection 
+                        Handler.asExecutor(() -> fetchStatsWithRetry(entityPlayer, apiRetryAttempt));
+                        return;
+                    } else {
+                        // Max nick retries reached - uncertain status, abandon checking
+                        // (Could be bot, new account, or other edge case - don't assume nicked)
+                        nickRetryTicks.remove(uuid);
+                        this.removeFromStatAssembly(uuid);
+                        return;
+                    }
+                } else {
+                    // Real UUID (v4) but API failed - use exponential backoff for API issues
+                    if (apiRetryAttempt < 8) { // 0-7 = 8 attempts total
+                        long delayMs = apiRetryAttempt == 0 ? 0 : Math.round(250 * Math.pow(2, apiRetryAttempt - 1));
+                        
+                        // Schedule retry with exponential backoff
+                        Handler.asExecutor(() -> {
+                            try {
+                                Thread.sleep(delayMs);
+                                fetchStatsWithRetry(entityPlayer, apiRetryAttempt + 1);
+                            } catch (InterruptedException e) {
+                                Thread.currentThread().interrupt();
+                            }
+                        });
+                        return;
+                    } else {
+                        // Max API retries reached for real UUID - abandon
+                        this.removeFromStatAssembly(uuid);
+                        return;
+                    }
+                }
             }
-
+            
+            // 5. API succeeded - player is definitely real, not nicked
+            // (API wouldn't return valid data for nicked players)
+            hPlayer.setNicked(false);
             this.addPlayer(uuid, hPlayer);
             this.removeFromStatAssembly(uuid);
+            nickRetryTicks.remove(uuid);
         });
     }
 

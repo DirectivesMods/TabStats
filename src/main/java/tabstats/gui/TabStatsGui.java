@@ -56,25 +56,37 @@ public class TabStatsGui extends GuiScreen {
         ModConfig cfg = ModConfig.getInstance();
         if (button.id == 0) {
             String key = this.actualApiKey.trim();
-            cfg.setApiKey(key);
-            cfg.save();
-            try {
-                tabstats.TabStats.getTabStats().getStatWorld().refreshAllPlayers();
-            } catch (Exception e) {
-                
+            String currentKey = cfg.getApiKey();
+            // Only update and refresh if the key actually changed
+            if (!key.equals(currentKey == null ? "" : currentKey)) {
+                cfg.setApiKey(key);
+                cfg.save();
+                try {
+                    tabstats.TabStats.getTabStats().getStatWorld().refreshAllPlayers();
+                } catch (Exception e) {
+                    
+                }
+                Minecraft.getMinecraft().thePlayer.addChatMessage(new ChatComponentText(ChatColor.GREEN + "TabStats API key updated!"));
+            } else {
+                Minecraft.getMinecraft().thePlayer.addChatMessage(new ChatComponentText(ChatColor.YELLOW + "API key unchanged."));
             }
-            Minecraft.getMinecraft().thePlayer.addChatMessage(new ChatComponentText(ChatColor.GREEN + "TabStats API key updated!"));
         } else if (button.id == 1) {
-            cfg.setApiKey("");
-            cfg.save();
-            this.actualApiKey = "";
-            updateFieldDisplay();
-            try {
-                tabstats.TabStats.getTabStats().getStatWorld().refreshAllPlayers();
-            } catch (Exception e) {
-                
+            String currentKey = cfg.getApiKey();
+            // Only clear and refresh if there's actually a key to clear
+            if (currentKey != null && !currentKey.trim().isEmpty()) {
+                cfg.setApiKey("");
+                cfg.save();
+                this.actualApiKey = "";
+                updateFieldDisplay();
+                try {
+                    tabstats.TabStats.getTabStats().getStatWorld().refreshAllPlayers();
+                } catch (Exception e) {
+                    
+                }
+                Minecraft.getMinecraft().thePlayer.addChatMessage(new ChatComponentText(ChatColor.GREEN + "TabStats API key cleared."));
+            } else {
+                Minecraft.getMinecraft().thePlayer.addChatMessage(new ChatComponentText(ChatColor.YELLOW + "API key is already empty."));
             }
-            Minecraft.getMinecraft().thePlayer.addChatMessage(new ChatComponentText(ChatColor.GREEN + "TabStats API key cleared."));
         } else if (button.id == 2) {
             Minecraft.getMinecraft().displayGuiScreen(null);
         } else if (button.id == 4) {

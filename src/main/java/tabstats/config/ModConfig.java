@@ -55,7 +55,15 @@ public class ModConfig {
     }
 
     public void setApiKey(String key) {
-        apiKey = key;
+        // Only update if the key actually changed
+        String normalizedKey = key == null ? "" : key.trim();
+        String currentKey = this.apiKey == null ? "" : this.apiKey.trim();
+        
+        if (!normalizedKey.equals(currentKey)) {
+            this.apiKey = key;
+            // Update lastApiKey to prevent duplicate change detection
+            this.lastApiKey = key;
+        }
     }
 
     @SuppressWarnings("ResultOfMethodCallIgnored")

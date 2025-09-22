@@ -139,10 +139,7 @@ public class Skywars extends SkywarsUtil {
                     int lvl = getSkywarsLevelFromFormatted(formatted);
                     if (lvl > 0) return lvl;
                 }
-                if (sw.has("skywars_experience")) {
-                    int exp = sw.get("skywars_experience").getAsInt();
-                    return getSkywarsLevelFromExperience(exp);
-                }
+                // If levelFormatted is missing, default to 0
             }
         } catch (Exception ignored) { /* silent-fail */ }
         return 0;
