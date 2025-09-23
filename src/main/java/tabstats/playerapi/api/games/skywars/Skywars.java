@@ -32,13 +32,6 @@ public class Skywars extends SkywarsUtil {
                     this.kills = new StatInt("Kills", "kills", this.skywarsJson),
                     this.deaths = new StatInt("Deaths", "deaths", this.skywarsJson)
             );
-            try {
-                // Experience is optional; used only for fallback level calc
-                if (this.playerObject.has("stats") && this.playerObject.getAsJsonObject("stats").has("SkyWars")) {
-                    this.experience = new StatInt("Experience", "skywars_experience",
-                            this.playerObject.getAsJsonObject("stats").getAsJsonObject("SkyWars"));
-                }
-            } catch (Exception ignored) { /* silent fail */ }
         }
     }
 
@@ -84,7 +77,7 @@ public class Skywars extends SkywarsUtil {
             return new ArrayList<>(); // Empty list = no stats displayed
         }
 
-        // STAR (first)
+    // STAR (first)
         StatString star = new StatString("STAR");
         star.setValue(buildStarDisplay());
         list.add(0, star);
@@ -121,80 +114,19 @@ public class Skywars extends SkywarsUtil {
         // no-op; we assemble in getFormattedStatList for consistency
     }
 
-    private int resolveSkywarsLevel() {
-        try {
-            if (this.playerObject.has("stats") && this.playerObject.getAsJsonObject("stats").has("SkyWars")) {
-                JsonObject sw = this.playerObject.getAsJsonObject("stats").getAsJsonObject("SkyWars");
-                if (sw.has("levelFormatted")) {
-                    String formatted = sw.get("levelFormatted").getAsString();
-                    int lvl = getSkywarsLevelFromFormatted(formatted);
-                    if (lvl > 0) return lvl;
-                }
-                // If levelFormatted is missing, default to 0
-            }
-        } catch (Exception ignored) { /* silent-fail */ }
-        return 0;
-    }
-
     private String buildStarDisplay() {
-        // Prefer in-game formatted string for exact colors and glyphs
+        // Only use Hypixel's preformatted string; strip brackets so only number + glyph remain
         try {
             if (this.playerObject.has("stats") && this.playerObject.getAsJsonObject("stats").has("SkyWars")) {
                 JsonObject sw = this.playerObject.getAsJsonObject("stats").getAsJsonObject("SkyWars");
-                // Always use Hypixel's formatted string with brackets when available
-                try {
-                    if (sw.has("levelFormattedWithBrackets")) {
-                        String withBrackets = sw.get("levelFormattedWithBrackets").getAsString();
-                        String out = withBrackets;
-                        // Remove only the literal outer brackets; preserve all § color codes
-                        try {
-                            int open = out.indexOf('[');
-                            int close = out.lastIndexOf(']');
-                            if (open >= 0 && close > open) {
-                                out = out.substring(0, open) + out.substring(open + 1, close) + out.substring(close + 1);
-                            } else {
-                                // Fallback: if format is unexpected, remove any brackets but keep colors
-                                out = out.replace("[", "").replace("]", "");
-                            }
-                        } catch (Exception ignored) { /* silent-fail */ }
-                        // Trim trailing reset to keep it tidy
-                        out = out.replaceAll("§r\\s*$", "");
-
-                        // Detect if there is an inline emblem glyph after the digits
-                        String plain = out.replaceAll("§[0-9A-FK-ORa-fk-or]", "");
-                        int lastDigit = -1;
-                        for (int i = 0; i < plain.length(); i++) {
-                            if (Character.isDigit(plain.charAt(i))) lastDigit = i;
-                        }
-                        String tail = (lastDigit >= 0 && lastDigit + 1 < plain.length()) ? plain.substring(lastDigit + 1).trim() : "";
-                        if (tail.isEmpty()) {
-                            // No inline emblem present; append mapped active_emblem if available
-                            try {
-                                if (sw.has("active_emblem")) {
-                                    String emblemId = sw.get("active_emblem").getAsString();
-                                    String mapped = mapEmblemGlyph(emblemId);
-                                    if (mapped != null && !mapped.isEmpty()) {
-                                        out = out + mapped;
-                                    }
-                                }
-                            } catch (Exception ignored) { /* silent-fail */ }
-                        }
-                        return out;
-                    }
-                } catch (Exception ignored) { /* silent-fail */ }
-                if (sw.has("levelFormatted")) {
-                    String formatted = sw.get("levelFormatted").getAsString();
-                    // Remove square brackets; keep Hypixel's color codes for digits
-                    formatted = formatted.replace("[", "").replace("]", "");
-
-                    // No withBrackets available; return the formatted digits as-is
-                    return formatted;
+                if (sw.has("levelFormattedWithBrackets")) {
+                    String s = sw.get("levelFormattedWithBrackets").getAsString();
+                    // Remove literal square brackets, keep colors and any glyphs
+                    return s.replace("[", "").replace("]", "");
                 }
             }
         } catch (Exception ignored) { /* silent-fail */ }
-
-        // Absolute fallback: compute level color if nothing else is available
-        int lvl = resolveSkywarsLevel();
-        return getStarColor(lvl) + Integer.toString(lvl);
+        // If the API doesn't provide it, show a simple placeholder
+        return "-";
     }
 }
