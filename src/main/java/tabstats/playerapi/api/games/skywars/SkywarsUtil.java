@@ -176,7 +176,7 @@ public abstract class SkywarsUtil extends HGameBase {
         m.put("emblem_knight", "♞");
         m.put("emblem_pencil", "✏");
         m.put("emblem_heavy_sparkle", "❈");
-        m.put("emblem_carrrots_for_eyes", "^_^");
+        m.put("emblem_carrots_for_eyes", "^_^");
         m.put("emblem_same_great_taste", "ಠ_ಠ");
         m.put("emblem_misaligned", "o...0");
         m.put("emblem_converge_on_tongue", ">u<");

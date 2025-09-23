@@ -141,68 +141,60 @@ public class Skywars extends SkywarsUtil {
         try {
             if (this.playerObject.has("stats") && this.playerObject.getAsJsonObject("stats").has("SkyWars")) {
                 JsonObject sw = this.playerObject.getAsJsonObject("stats").getAsJsonObject("SkyWars");
+                // Always use Hypixel's formatted string with brackets when available
+                try {
+                    if (sw.has("levelFormattedWithBrackets")) {
+                        String withBrackets = sw.get("levelFormattedWithBrackets").getAsString();
+                        String out = withBrackets;
+                        // Remove only the literal outer brackets; preserve all § color codes
+                        try {
+                            int open = out.indexOf('[');
+                            int close = out.lastIndexOf(']');
+                            if (open >= 0 && close > open) {
+                                out = out.substring(0, open) + out.substring(open + 1, close) + out.substring(close + 1);
+                            } else {
+                                // Fallback: if format is unexpected, remove any brackets but keep colors
+                                out = out.replace("[", "").replace("]", "");
+                            }
+                        } catch (Exception ignored) { /* silent-fail */ }
+                        // Trim trailing reset to keep it tidy
+                        out = out.replaceAll("§r\\s*$", "");
+
+                        // Detect if there is an inline emblem glyph after the digits
+                        String plain = out.replaceAll("§[0-9A-FK-ORa-fk-or]", "");
+                        int lastDigit = -1;
+                        for (int i = 0; i < plain.length(); i++) {
+                            if (Character.isDigit(plain.charAt(i))) lastDigit = i;
+                        }
+                        String tail = (lastDigit >= 0 && lastDigit + 1 < plain.length()) ? plain.substring(lastDigit + 1).trim() : "";
+                        if (tail.isEmpty()) {
+                            // No inline emblem present; append mapped active_emblem if available
+                            try {
+                                if (sw.has("active_emblem")) {
+                                    String emblemId = sw.get("active_emblem").getAsString();
+                                    String mapped = mapEmblemGlyph(emblemId);
+                                    if (mapped != null && !mapped.isEmpty()) {
+                                        out = out + mapped;
+                                    }
+                                }
+                            } catch (Exception ignored) { /* silent-fail */ }
+                        }
+                        return out;
+                    }
+                } catch (Exception ignored) { /* silent-fail */ }
                 if (sw.has("levelFormatted")) {
                     String formatted = sw.get("levelFormatted").getAsString();
                     // Remove square brackets; keep Hypixel's color codes for digits
                     formatted = formatted.replace("[", "").replace("]", "");
 
-                    // Build a version with any trailing glyph removed: cut at last digit
-                    String visible = formatted.replaceAll("§.", "");
-                    int lastDigitPos = -1;
-                    for (int i = 0; i < visible.length(); i++) {
-                        if (Character.isDigit(visible.charAt(i))) lastDigitPos = i;
-                    }
-                    if (lastDigitPos >= 0) {
-                        StringBuilder rebuilt = new StringBuilder();
-                        int vIndex = -1;
-                        for (int i = 0; i < formatted.length(); i++) {
-                            char ch = formatted.charAt(i);
-                            if (ch == '§' && i + 1 < formatted.length()) {
-                                rebuilt.append(ch).append(formatted.charAt(i + 1));
-                                i++; // skip color code payload
-                                continue;
-                            }
-                            vIndex++;
-                            rebuilt.append(ch);
-                            if (vIndex == lastDigitPos) {
-                                break; // stop after last digit; drop any trailing glyphs/spaces
-                            }
-                        }
-                        formatted = rebuilt.toString();
-                    }
-
-                    // Decide single glyph to append: prefer active_emblem if present, else default ✯
-                    String glyph = "✯";
-                    try {
-                        if (sw.has("active_emblem")) {
-                            String emblemId = sw.get("active_emblem").getAsString();
-                            String emblem = mapEmblemGlyph(emblemId);
-                            if (emblem != null && !emblem.isEmpty()) {
-                                glyph = emblem;
-                            }
-                        }
-                    } catch (Exception ignored) { /* silent-fail */ }
-
-                    return formatted + glyph;
+                    // No withBrackets available; return the formatted digits as-is
+                    return formatted;
                 }
             }
         } catch (Exception ignored) { /* silent-fail */ }
 
-        // Fallback: compute level color, then append a single glyph (active_emblem if present, otherwise ✯)
+        // Absolute fallback: compute level color if nothing else is available
         int lvl = resolveSkywarsLevel();
-        String glyph = "✯";
-        try {
-            if (this.playerObject.has("stats") && this.playerObject.getAsJsonObject("stats").has("SkyWars")) {
-                JsonObject sw = this.playerObject.getAsJsonObject("stats").getAsJsonObject("SkyWars");
-                if (sw.has("active_emblem")) {
-                    String emblemId = sw.get("active_emblem").getAsString();
-                    String emblem = mapEmblemGlyph(emblemId);
-                    if (emblem != null && !emblem.isEmpty()) {
-                        glyph = emblem;
-                    }
-                }
-            }
-        } catch (Exception ignored) { /* silent-fail */ }
-        return getStarColor(lvl) + Integer.toString(lvl) + glyph;
+        return getStarColor(lvl) + Integer.toString(lvl);
     }
 }
