@@ -42,8 +42,6 @@ public class Bedwars extends BedwarsUtil {
                     this.deaths = new StatInt("Deaths", "deaths_bedwars", this.bedwarsJson),
                     this.bedsBroken = new StatInt("Beds Broken", "beds_broken_bedwars", this.bedwarsJson),
                     this.bedsLost = new StatInt("Beds Lost", "beds_lost_bedwars", this.bedwarsJson));
-        } else {
-            this.formattedStatList.add(new StatString("Star", ChatColor.RED + "NICKED"));
         }
     }
 
@@ -90,12 +88,9 @@ public class Bedwars extends BedwarsUtil {
     public List<Stat> getFormattedStatList() {
         List<Stat> returnList = new ArrayList<>(this.formattedStatList);
 
-        // If nicked or no data, return minimal safe list
-        if (this.isNicked) {
-            return returnList; // constructor already added NICKED marker
-        }
+        // If player has no stats, return empty list so they show only their name
         if (!this.hasPlayed || this.bedwarsJson == null) {
-            return returnList; // nothing more to add safely
+            return new ArrayList<>(); // Empty list = no stats displayed
         }
 
         int starVal = 0;

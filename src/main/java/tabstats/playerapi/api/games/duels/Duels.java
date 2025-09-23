@@ -33,8 +33,6 @@ public class Duels extends DuelsUtil {
                     this.wins = new StatInt("Wins", "wins", this.duelJson),
                     this.losses = new StatInt("Losses", "losses", this.duelJson),
                     this.kills = new StatInt("Kills", "kills", this.duelJson));
-        } else {
-            this.formattedStatList.add(new StatString("Wins", ChatColor.RED + "NICKED"));
         }
     }
 
@@ -77,13 +75,9 @@ public class Duels extends DuelsUtil {
     public List<Stat> getFormattedStatList() {
         List<Stat> statList = new ArrayList<>(this.formattedStatList);
 
-        // If player is nicked or has no data, return minimal safe list
-        if (this.isNicked) {
-            return statList; // already contains NICKED marker from constructor
-        }
+        // If player has no stats, return empty list so they show only their name
         if (!this.hasPlayed || this.duelJson == null) {
-            statList.add(new StatString("WLR", ChatColor.GRAY + "0"));
-            return statList;
+            return new ArrayList<>(); // Empty list = no stats displayed
         }
 
         // Safely build title row

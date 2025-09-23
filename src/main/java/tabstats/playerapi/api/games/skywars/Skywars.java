@@ -39,8 +39,6 @@ public class Skywars extends SkywarsUtil {
                             this.playerObject.getAsJsonObject("stats").getAsJsonObject("SkyWars"));
                 }
             } catch (Exception ignored) { /* silent fail */ }
-        } else {
-            this.formattedStatList.add(new StatString("KDR", ChatColor.RED + "NICKED"));
         }
     }
 
@@ -81,14 +79,9 @@ public class Skywars extends SkywarsUtil {
     public List<Stat> getFormattedStatList() {
         List<Stat> list = new ArrayList<>(this.formattedStatList);
 
-        // If player is nicked or hasn't played, return minimal safe list
-        if (this.isNicked) {
-            list.add(new StatString("KDR", ChatColor.RED + "NICKED"));
-            return list;
-        }
+        // If player has no stats, return empty list so they show only their name
         if (!this.hasPlayed || this.skywarsJson == null) {
-            list.add(new StatString("KDR", ChatColor.GRAY + "0"));
-            return list;
+            return new ArrayList<>(); // Empty list = no stats displayed
         }
 
         // STAR (first)
@@ -96,24 +89,24 @@ public class Skywars extends SkywarsUtil {
         star.setValue(buildStarDisplay());
         list.add(0, star);
 
-    // KDR
-    StatString kdr = new StatString("KDR");
-    double kdrVal = this.getKdr(this);
-    kdr.setValue(this.getKdrColor(kdrVal).toString() + kdrVal);
-    list.add(kdr);
+        // KDR
+        StatString kdr = new StatString("KDR");
+        double kdrVal = this.getKdr(this);
+        kdr.setValue(this.getKdrColor(kdrVal).toString() + kdrVal);
+        list.add(kdr);
 
-    // KILLS
-    StatString kills = new StatString("KILLS");
-    int killsVal = 0;
-    try { if (this.kills != null) killsVal = ((StatInt) this.kills).getValue(); } catch (Exception ignored) {}
-    kills.setValue(this.getKillsColor(killsVal).toString() + killsVal);
-    list.add(kills);
+        // KILLS
+        StatString kills = new StatString("KILLS");
+        int killsVal = 0;
+        try { if (this.kills != null) killsVal = ((StatInt) this.kills).getValue(); } catch (Exception ignored) {}
+        kills.setValue(this.getKillsColor(killsVal).toString() + killsVal);
+        list.add(kills);
 
-    // WLR
-    StatString wlr = new StatString("WLR");
-    double wlrVal = this.getWlr(this);
-    wlr.setValue(this.getWlrColor(wlrVal).toString() + wlrVal);
-    list.add(wlr);
+        // WLR
+        StatString wlr = new StatString("WLR");
+        double wlrVal = this.getWlr(this);
+        wlr.setValue(this.getWlrColor(wlrVal).toString() + wlrVal);
+        list.add(wlr);
 
         // WINS
         StatString wins = new StatString("WINS");
@@ -123,9 +116,7 @@ public class Skywars extends SkywarsUtil {
         list.add(wins);
 
         return list;
-    }
-
-    @Override
+    }    @Override
     public void setFormattedStatList() {
         // no-op; we assemble in getFormattedStatList for consistency
     }

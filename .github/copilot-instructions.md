@@ -1,7 +1,7 @@
 # TabStats Copilot Instructions
 
 ## Project Overview
-TabStats is a Minecraft 1.8.9 Forge mod that displays real-time Hypixel player statistics directly in the tab list. It integrates with the Hypixel API to show stats for Bedwars and Duels game modes with color-coded performance indicators.
+TabStats is a Minecraft 1.8.9 Forge mod that displays real-time Hypixel player statistics directly in the tab list. It integrates with the Hypixel API to show stats for Bedwars, Duels, and Skywars game modes with color-coded performance indicators.
 
 ## Architecture & Key Components
 
@@ -13,9 +13,10 @@ TabStats is a Minecraft 1.8.9 Forge mod that displays real-time Hypixel player s
 - **`HypixelAPI.java`** - HTTP client for Hypixel API requests with custom exceptions
 
 ### Game-Specific Implementation
-- **Game classes inherit**: `HGameBase` → `{Bedwars|Duels}Util` → `{Bedwars|Duels}`
+- **Game classes inherit**: `HGameBase` → `{Bedwars|Duels|Skywars}Util` → `{Bedwars|Duels|Skywars}`
 - **Stat system**: `Stat` base class with `StatInt`, `StatDouble`, `StatString` variants
-- **Color coding**: Extensive performance-based color schemes in util classes (e.g., `getFkdrColor()`, `getStarWithColor()`)
+- **Color coding**: Extensive performance-based color schemes in util classes (e.g., `getFkdrColor()`, `getStarWithColor()`, `getKdrColor()`)
+- **Skywars-specific**: Complex emblem mapping system with 40+ Unicode symbols (`EMBLEM_MAP`)
 
 ### Asynchronous Processing
 - All API requests use `Handler.asExecutor()` with named thread pool (`TabStats-%d`)
@@ -83,10 +84,12 @@ Used throughout config file I/O, API requests, and JSON parsing.
 2. Extend `HGameBase` with game-specific util class
 3. Implement stat calculation and color coding methods
 4. Add to `StatWorld.fetchStats()` instantiation
+5. For complex display formatting (like Skywars emblems), create helper methods in util class
 
 ### API Integration Notes
 - **Rate limiting**: No explicit throttling - relies on caching
 - **Player detection**: UUID version 4 = real players, version 1 = nicked players  
 - **Cache management**: 5-second existence check before API fetching
 - **Error types**: `InvalidKeyException`, `PlayerNullException`, `GameNullException`, `BadJsonException`
-- **Nick detection**: UUID version analysis runs during player processing for simple nick identification
+- **Nick detection**: Sophisticated dual-check system using UUID version analysis + skin hash comparison
+- **Retry logic**: Exponential backoff for API failures, separate tick-based retry for nick uncertainty

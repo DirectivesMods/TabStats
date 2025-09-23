@@ -161,10 +161,12 @@ public class StatWorld {
                         Handler.asExecutor(() -> fetchStatsWithRetry(entityPlayer, apiRetryAttempt));
                         return;
                     } else {
-                        // Max nick retries reached - uncertain status, abandon checking
-                        // (Could be bot, new account, or other edge case - don't assume nicked)
-                        nickRetryTicks.remove(uuid);
+                        // Max nick retries reached - uncertain status, treat as regular player with no stats
+                        // This ensures players like "WHOAPERJIS" show only their name, not [NICKED]
+                        hPlayer.setNicked(false);
+                        this.addPlayer(uuid, hPlayer);
                         this.removeFromStatAssembly(uuid);
+                        nickRetryTicks.remove(uuid);
                         return;
                     }
                 } else {
@@ -183,7 +185,10 @@ public class StatWorld {
                         });
                         return;
                     } else {
-                        // Max API retries reached for real UUID - abandon
+                        // Max API retries reached for real UUID - treat as regular player with no stats
+                        // This ensures new players show only their name, not as nicked
+                        hPlayer.setNicked(false);
+                        this.addPlayer(uuid, hPlayer);
                         this.removeFromStatAssembly(uuid);
                         return;
                     }
