@@ -43,7 +43,7 @@ public class HypixelAPI {
         if (apiKey == null || apiKey.trim().isEmpty()) {
             throw new InvalidKeyException();
         } else {
-            String requestURL = String.format("https://api.hypixel.net/player?key=%s&uuid=%s", apiKey, uuid.replace("-", ""));
+            String requestURL = String.format("https://api.hypixel.net/v2/player?key=%s&uuid=%s", apiKey, uuid.replace("-", ""));
             try (CloseableHttpClient client = HttpClients.createDefault()) {
                 HttpGet request = new HttpGet(requestURL);
                 JsonParser parser = new JsonParser();
