@@ -78,7 +78,7 @@ public class StatsTab extends GuiPlayerTabOverlay {
         ScaledResolution scaledRes = new ScaledResolution(this.mc);
         /* where the render should start on x plane */
         int startingX = scaledRes.getScaledWidth() / 2 - width / 2;
-        int startingY = 35;
+        int startingY = 20;
 
         /* this is kind of useless...as nameWidth and objectiveWidth aren't used */
         for (NetworkPlayerInfo playerInfo : playerList) {
