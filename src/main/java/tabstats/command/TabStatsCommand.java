@@ -23,7 +23,7 @@ public class TabStatsCommand extends CommandBase {
     
     @Override
     public String getCommandUsage(ICommandSender sender) {
-        return "/tabstats - Open TabStats GUI";
+        return "/tabstats - Opens TabStats GUI";
     }
     
     @Override

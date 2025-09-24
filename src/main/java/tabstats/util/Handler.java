@@ -12,8 +12,8 @@ import java.util.concurrent.Executors;
 
 public class Handler {
     public static final Locale LOCALE = getLocale();
-    private static final ExecutorService executorService = Executors.newCachedThreadPool(
-        new ThreadFactoryBuilder().setNameFormat("TabStats-%d").build()
+    private static final ExecutorService executorService = Executors.newFixedThreadPool(16,
+        new ThreadFactoryBuilder().setNameFormat("TabStats-%d").setDaemon(true).build()
     );
 
     private static Locale getLocale() {

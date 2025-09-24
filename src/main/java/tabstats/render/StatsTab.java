@@ -28,18 +28,14 @@ import net.minecraft.util.EnumChatFormatting;
 import net.minecraft.util.IChatComponent;
 import net.minecraft.util.MathHelper;
 import net.minecraft.world.WorldSettings;
-import net.minecraftforge.fml.common.eventhandler.SubscribeEvent;
-import net.minecraftforge.fml.common.gameevent.InputEvent;
 import net.minecraftforge.fml.relauncher.Side;
 import net.minecraftforge.fml.relauncher.SideOnly;
 import org.apache.commons.lang3.StringUtils;
 import org.apache.commons.lang3.text.WordUtils;
-import org.lwjgl.input.Keyboard;
 
 import java.util.Comparator;
 import java.util.List;
 
-/* fair warning, this class is heavily "documented" (very poorly) for new programmers to understand how it works */
 public class StatsTab extends GuiPlayerTabOverlay {
     private static final Ordering<NetworkPlayerInfo> field_175252_a = Ordering.from(new StatsTab.PlayerComparator());
     private final Minecraft mc;
@@ -65,6 +61,15 @@ public class StatsTab extends GuiPlayerTabOverlay {
     public void renderNewPlayerlist(int width, Scoreboard scoreboardIn, ScoreObjective scoreObjectiveIn, List<Stat> gameStatTitleList, String gamemode) {
         NetHandlerPlayClient nethandler = this.mc.thePlayer.sendQueue;
         List<NetworkPlayerInfo> playerList = field_175252_a.sortedCopy(nethandler.getPlayerInfoMap());
+        
+        // Filter out NPCs (version 2/3 UUIDs) from the tab list completely
+        // Only show version 4 (real players) and version 1 (potentially nicked players)
+        playerList.removeIf(playerInfo -> {
+            if (playerInfo.getGameProfile().getId() == null) return true;
+            
+            int uuidVersion = playerInfo.getGameProfile().getId().version();
+            return uuidVersion != 4 && uuidVersion != 1;
+        });
         /* width of the player's name */
         int nameWidth = 0;
         /* width of the player's objective string */

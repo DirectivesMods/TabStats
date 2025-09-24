@@ -30,11 +30,6 @@ public class HypixelAPI {
      * @return JsonObject of the player's whole api result
      * @throws InvalidKeyException If Hypixel API Key is Invalid
      * @throws PlayerNullException If Target Player UUID is returned Null from the Hypixel API
-    /**
-     * @param uuid Target player's UUID
-     * @return JsonObject of the player's whole api result
-     * @throws InvalidKeyException If Hypixel API Key is Invalid
-     * @throws PlayerNullException If Target Player UUID is returned Null from the Hypixel API
      * @throws ApiRequestException If any other exception is thrown during the request
      */
     public JsonObject getWholeObject(String uuid) throws InvalidKeyException, PlayerNullException, ApiRequestException, BadJsonException {

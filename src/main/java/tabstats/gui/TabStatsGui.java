@@ -63,8 +63,8 @@ public class TabStatsGui extends GuiScreen {
                 cfg.save();
                 try {
                     tabstats.TabStats.getTabStats().getStatWorld().refreshAllPlayers();
-                } catch (Exception e) {
-                    
+                } catch (Exception ignored) {
+                    // Silent fail - don't spam console
                 }
                 Minecraft.getMinecraft().thePlayer.addChatMessage(new ChatComponentText(ChatColor.GREEN + "TabStats API key updated!"));
             } else {
@@ -80,8 +80,8 @@ public class TabStatsGui extends GuiScreen {
                 updateFieldDisplay();
                 try {
                     tabstats.TabStats.getTabStats().getStatWorld().refreshAllPlayers();
-                } catch (Exception e) {
-                    
+                } catch (Exception ignored) {
+                    // Silent fail - don't spam console
                 }
                 Minecraft.getMinecraft().thePlayer.addChatMessage(new ChatComponentText(ChatColor.GREEN + "TabStats API key cleared."));
             } else {
@@ -163,15 +163,15 @@ public class TabStatsGui extends GuiScreen {
                         actualApiKey = clipboard;
                         updateFieldDisplay();
                     }
-                } catch (Exception e) {
-                    
+                } catch (Exception ignored) {
+                    // Silent fail on clipboard access
                 }
             } else if (isCopy) {
                 try {
                     java.awt.datatransfer.StringSelection selection = new java.awt.datatransfer.StringSelection(actualApiKey);
                     java.awt.Toolkit.getDefaultToolkit().getSystemClipboard().setContents(selection, null);
-                } catch (Exception e) {
-                    
+                } catch (Exception ignored) {
+                    // Silent fail on clipboard access
                 }
             } else if (isSelectAll) {
                 this.apiField.setCursorPositionZero();

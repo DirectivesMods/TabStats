@@ -16,7 +16,6 @@ import java.util.Base64;
 import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
 import com.google.gson.JsonParser;
-import com.google.gson.JsonObject;
 import net.minecraft.entity.player.EntityPlayer;
 
 import java.util.*;
@@ -36,6 +35,11 @@ public class StatWorld {
 
     public void removePlayer(UUID playerUUID) {
         worldPlayers.remove(playerUUID);
+        // Clean up tracking maps to prevent memory leaks
+        nickRetryTicks.remove(playerUUID);
+        timeCheck.remove(playerUUID);
+        statAssembly.remove(playerUUID);
+        existedMoreThan5Seconds.remove(playerUUID);
     }
 
     public void addPlayer(UUID playerUUID, HPlayer player) {
@@ -44,10 +48,11 @@ public class StatWorld {
 
     public void clearPlayers() {
         worldPlayers.clear();
+        // Clear all tracking maps to prevent memory leaks
+        nickRetryTicks.clear();
+        timeCheck.clear();
         statAssembly.clear();
         existedMoreThan5Seconds.clear();
-        timeCheck.clear();
-        nickRetryTicks.clear();
     }
 
     public void refreshAllPlayers() {
