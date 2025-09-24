@@ -17,11 +17,11 @@ public class ChatListener {
         String messageText = message.getUnformattedText();
         if (messageText == null) return;
         
-        // Listen for Skywars game start message to refresh tab list (hacky yet consistent implementation to fix players not being tracked after game start)
+        // Listen for Skywars game start message to refresh tab list (hacky yet consistent implementation to fix players not being properly tracked after game start)
         if (messageText.contains("Gather resources and equipment on your")) {
             Handler.asExecutor(() -> {
                 try {
-                    Thread.sleep(500);
+                    Thread.sleep(1000);
                 } catch (InterruptedException ignored) {
                     Thread.currentThread().interrupt();
                     return;

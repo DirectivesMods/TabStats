@@ -77,7 +77,7 @@ public class Skywars extends SkywarsUtil {
             return new ArrayList<>(); // Empty list = no stats displayed
         }
 
-    // STAR (first)
+        // STAR
         StatString star = new StatString("STAR");
         star.setValue(buildStarDisplay());
         list.add(0, star);
@@ -127,6 +127,6 @@ public class Skywars extends SkywarsUtil {
             }
         } catch (Exception ignored) { /* silent-fail */ }
         // If the API doesn't provide it, show a simple placeholder
-        return "-";
+        return ChatColor.GRAY + "-";
     }
 }

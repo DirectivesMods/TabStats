@@ -39,17 +39,5 @@ public enum DuelsModes {
 
     public String getName() { return this.name; }
 
-    public String getTitleName() { return this.titleName; }
-
-    public String getWSJson() { return this.wsJson; }
-
-    public String getBestWSJson() { return this.bestWsJson; }
-
     public String getWinsJson() { return this.winsJson; }
-
-    public String getLossesJson() { return this.lossesJson; }
-
-    public String getKillsJson() { return this.killsJson; }
-
-    public String getDeathsJson() { return this.deathsJson; }
 }

@@ -92,7 +92,6 @@ public enum ChatColor {
         return null;
     }
 
-
     @Override
     public String toString() {
         return this.toString;
