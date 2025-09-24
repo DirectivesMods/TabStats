@@ -1,6 +1,7 @@
 package tabstats;
 
 import tabstats.config.ModConfig;
+import tabstats.listener.ChatListener;
 import tabstats.listener.GameOverlayListener;
 import tabstats.listener.GuiOpenListener;
 import tabstats.playerapi.WorldLoader;
@@ -29,7 +30,7 @@ public class TabStats {
     @Mod.EventHandler
     public void init(FMLInitializationEvent event) {
         this.statWorld = new WorldLoader();
-        this.registerListeners(statWorld, new GameOverlayListener(), new GuiOpenListener());
+        this.registerListeners(statWorld, new GameOverlayListener(), new GuiOpenListener(), new ChatListener());
     }
 
     @Mod.EventHandler

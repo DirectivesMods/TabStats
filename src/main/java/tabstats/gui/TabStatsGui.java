@@ -62,7 +62,7 @@ public class TabStatsGui extends GuiScreen {
                 cfg.setApiKey(key);
                 cfg.save();
                 try {
-                    tabstats.TabStats.getTabStats().getStatWorld().refreshAllPlayers();
+                    tabstats.TabStats.getTabStats().getStatWorld().recheckAllPlayers();
                 } catch (Exception ignored) {
                     // Silent fail - don't spam console
                 }
@@ -79,7 +79,7 @@ public class TabStatsGui extends GuiScreen {
                 this.actualApiKey = "";
                 updateFieldDisplay();
                 try {
-                    tabstats.TabStats.getTabStats().getStatWorld().refreshAllPlayers();
+                    tabstats.TabStats.getTabStats().getStatWorld().recheckAllPlayers();
                 } catch (Exception ignored) {
                     // Silent fail - don't spam console
                 }

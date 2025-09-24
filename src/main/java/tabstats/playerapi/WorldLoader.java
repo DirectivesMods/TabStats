@@ -40,10 +40,25 @@ public class WorldLoader extends StatWorld {
             String skinHash = extractSkinHashFromEntity(entityPlayer);
             boolean isDefinitelyNicked = tabstats.util.NickDetector.isPlayerNicked(playerUUID, skinHash);
             
+            // Handle uncertain nick detection (Version 1 UUID but unknown skin hash)
+            if (!isDefinitelyNicked && tabstats.util.NickDetector.isNickedUuid(playerUUID) && skinHash == null) {
+                // Uncertain case - Version 1 UUID but skin not loaded yet, retry up to 200 ticks
+                int ticks = nickRetryTicks.merge(uuid, 1, (a, b) -> a + b);
+                if (ticks < 200) {
+                    // Remove from stat assembly to allow retry on next tick
+                    this.removeFromStatAssembly(uuid);
+                    return;
+                } else {
+                    // Max retries reached - treat as uncertain, show name only (not nicked)
+                    nickRetryTicks.remove(uuid);
+                }
+            }
+            
             // Set nick status and add to world
             hPlayer.setNicked(isDefinitelyNicked);
             this.addPlayer(uuid, hPlayer);
             this.removeFromStatAssembly(uuid);
+            nickRetryTicks.remove(uuid); // Clear retry counter on success
         });
     }
 

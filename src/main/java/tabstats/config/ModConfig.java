@@ -47,7 +47,7 @@ public class ModConfig {
         try {
             tabstats.TabStats tabStats = tabstats.TabStats.getTabStats();
             if (tabStats != null && tabStats.getStatWorld() != null) {
-                tabStats.getStatWorld().refreshAllPlayers();
+                tabStats.getStatWorld().recheckAllPlayers();
             }
         } catch (Exception e) {
             // Silent fail - don't spam console

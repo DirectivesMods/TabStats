@@ -55,12 +55,40 @@ public class StatWorld {
         existedMoreThan5Seconds.clear();
     }
 
-    public void refreshAllPlayers() {
-        // Clear all cached data to force re-fetching with new API key
+    /**
+     * Re-render tab list: For each player check if they're in cache, if yes display cached data,
+     * if not in cache then fetch stats for that player only
+     */
+    public void rerenderTabList() {
+        // Clear tracking to allow fresh processing but preserve cached players
+        timeCheck.clear();
+        statAssembly.clear();
+        
+        // Reset nick retry counters to allow fresh attempts during refresh
+        nickRetryTicks.clear();
+        
+        // Preserve existence tracking for cached players to avoid 5-second delays
+        Set<UUID> preservedUUIDs = new HashSet<>(worldPlayers.keySet());
+        existedMoreThan5Seconds.clear();
+        existedMoreThan5Seconds.addAll(preservedUUIDs);
+        
+        // The actual re-rendering logic happens in WorldLoader.onTick():
+        // - Cached players display immediately
+        // - Non-cached players trigger fetchStatsWithRetry()
+    }
+
+    /**
+     * Recheck all players: Force all players through fetchStatsWithRetry regardless of cache status
+     */
+    public void recheckAllPlayers() {
+        // Clear all cached data to force re-fetching for everyone
         clearPlayers();
     }
 
-    public void refreshPlayer(UUID uuid) {
+    /**
+     * Force recheck a specific player: Remove from cache and trigger fresh fetchStatsWithRetry
+     */
+    public void recheckPlayer(UUID uuid) {
         // Remove specific player to force re-fetch
         worldPlayers.remove(uuid);
         statAssembly.remove(uuid);
@@ -88,6 +116,9 @@ public class StatWorld {
         return null;
     }
 
+    /**
+     * Fetch stats for a specific player using the retry system
+     */
     public void fetchStats(EntityPlayer entityPlayer) {
         fetchStatsWithRetry(entityPlayer, 0);
     }
@@ -159,11 +190,12 @@ public class StatWorld {
                 
                 // If UUID suggests possible nick but we're uncertain about skin, use nick retry system
                 if (NickDetector.isNickedUuid(playerUUID)) {
-                    // Uncertain about nick status - use nick retry system (tick-based)
+                    // Uncertain about nick status - retry nick detection only (no API calls are made)
                     int ticks = nickRetryTicks.merge(uuid, 1, (a, b) -> a + b);
                     if (ticks < 200) {
-                        // Retry entire process for nick detection 
-                        Handler.asExecutor(() -> fetchStatsWithRetry(entityPlayer, apiRetryAttempt));
+                        // Retry nick detection only - don't retry API calls for nicked players
+                        this.removeFromStatAssembly(uuid);
+                        // Will be retried on next tick via WorldLoader.onTick -> checkNickStatus
                         return;
                     } else {
                         // Max nick retries reached - uncertain status, treat as regular player with no stats
