@@ -358,14 +358,6 @@ public class StatsTab extends GuiPlayerTabOverlay {
                 int downY = startingY + this.entryHeight + 1 + (visiblePlayerCount * (this.entryHeight + 1)) - 10;
                 this.mc.fontRendererObj.drawStringWithShadow(downArrow, indicatorX, downY, ChatColor.WHITE.getRGB());
             }
-            
-            // Optional: Show scroll position indicator (e.g., "5/20")
-            if (playerListSize > 0) {
-                String scrollInfo = String.format("%d/%d", startIndex + visiblePlayerCount, playerListSize);
-                int infoX = indicatorX - this.mc.fontRendererObj.getStringWidth(scrollInfo) - 5;
-                int infoY = startingY + (this.entryHeight / 2 - 4);
-                this.mc.fontRendererObj.drawStringWithShadow(scrollInfo, infoX, infoY, ChatColor.GRAY.getRGB());
-            }
         }
     }
 

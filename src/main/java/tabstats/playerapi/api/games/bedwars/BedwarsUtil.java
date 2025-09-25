@@ -84,19 +84,6 @@ public abstract class BedwarsUtil extends HGameBase {
         return ChatColor.DARK_PURPLE;
     }
 
-    public ChatColor getStarColor(int star) {
-        if (star < 100) return ChatColor.GRAY;
-        if (star < 200) return ChatColor.WHITE;
-        if (star < 300) return ChatColor.GOLD;
-        if (star < 400) return ChatColor.AQUA;
-        if (star < 500) return ChatColor.DARK_GREEN;
-        if (star < 600) return ChatColor.DARK_AQUA;
-        if (star < 700) return ChatColor.DARK_RED;
-        if (star < 800) return ChatColor.LIGHT_PURPLE;
-        if (star < 900) return ChatColor.BLUE;
-        return ChatColor.DARK_PURPLE;
-    }
-
     public String getStarWithColor(int star) {
         String starString = Integer.toString(star);
 
@@ -105,9 +92,7 @@ public abstract class BedwarsUtil extends HGameBase {
             return formatWithStyle(starString, style) + style.glyphColor + getBedwarsGlyph(star);
         }
 
-        int cycleBasis = star % 1000;
-        ChatColor color = getStarColor(cycleBasis);
-        return color + starString + getBedwarsGlyph(star);
+        return ChatColor.GRAY + "-";
     }
 
     private String getBedwarsGlyph(int star) {
@@ -167,14 +152,20 @@ public abstract class BedwarsUtil extends HGameBase {
             } else {
                 color = style.digitColors[0];
             }
-            sb.append(color).append(chars[i]);
+            sb.append(color.toString()).append(chars[i]);
         }
         return sb.toString();
     }
 
     private PrestigeStyle getPrestigeStyle(int star) {
         if (star <= 0) return null;
-        int base = (star / 100) * 100;
+        
+        // For 5000+ stars, always use the 5000 star style
+        if (star >= 5000) {
+            return PRESTIGE_STYLES.get(5000);
+        }
+        
+        int base = (star / 100) * 100; // floor using integer math
         return PRESTIGE_STYLES.get(base);
     }
 
@@ -203,7 +194,7 @@ public abstract class BedwarsUtil extends HGameBase {
         PRESTIGE_STYLES.put(1200, mono(ChatColor.YELLOW, ChatColor.GOLD));
         PRESTIGE_STYLES.put(1300, mono(ChatColor.AQUA, ChatColor.DARK_AQUA));
         PRESTIGE_STYLES.put(1400, mono(ChatColor.GREEN, ChatColor.DARK_GREEN));
-        PRESTIGE_STYLES.put(1500, new PrestigeStyle(new ChatColor[]{ChatColor.DARK_AQUA, ChatColor.DARK_AQUA, ChatColor.DARK_AQUA, ChatColor.DARK_AQUA}, ChatColor.BLUE));
+        PRESTIGE_STYLES.put(1500, mono(ChatColor.DARK_AQUA, ChatColor.BLUE));
         PRESTIGE_STYLES.put(1600, mono(ChatColor.RED, ChatColor.DARK_RED));
         PRESTIGE_STYLES.put(1700, mono(ChatColor.LIGHT_PURPLE, ChatColor.DARK_PURPLE));
         PRESTIGE_STYLES.put(1800, mono(ChatColor.BLUE, ChatColor.DARK_BLUE));
@@ -239,5 +230,6 @@ public abstract class BedwarsUtil extends HGameBase {
         PRESTIGE_STYLES.put(4800, new PrestigeStyle(new ChatColor[]{ChatColor.DARK_PURPLE, ChatColor.RED, ChatColor.GOLD, ChatColor.YELLOW}, ChatColor.AQUA));
         PRESTIGE_STYLES.put(4900, new PrestigeStyle(new ChatColor[]{ChatColor.GREEN, ChatColor.WHITE, ChatColor.WHITE, ChatColor.GREEN}, ChatColor.GREEN));
         PRESTIGE_STYLES.put(5000, new PrestigeStyle(new ChatColor[]{ChatColor.DARK_RED, ChatColor.DARK_PURPLE, ChatColor.BLUE, ChatColor.BLUE}, ChatColor.DARK_BLUE));
+        // All 5000+ stars use the 5000 star style (handled in getPrestigeStyle method)
     }
 }
