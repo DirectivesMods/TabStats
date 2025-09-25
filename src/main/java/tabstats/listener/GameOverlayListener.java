@@ -20,6 +20,13 @@ public class GameOverlayListener {
     public GameOverlayListener() {
         this.statsTab = new StatsTab(this.mc, this.mc.ingameGUI);
     }
+    
+    /**
+     * Gets the StatsTab instance for external access
+     */
+    public StatsTab getStatsTab() {
+        return this.statsTab;
+    }
 
     @SubscribeEvent
     public void onOverlayRender(RenderGameOverlayEvent.Pre event) {

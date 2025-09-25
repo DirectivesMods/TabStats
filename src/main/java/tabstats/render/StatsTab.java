@@ -32,6 +32,7 @@ import net.minecraftforge.fml.relauncher.Side;
 import net.minecraftforge.fml.relauncher.SideOnly;
 import org.apache.commons.lang3.StringUtils;
 import org.apache.commons.lang3.text.WordUtils;
+import org.lwjgl.opengl.GL11;
 
 import java.util.Comparator;
 import java.util.List;
@@ -51,11 +52,90 @@ public class StatsTab extends GuiPlayerTabOverlay {
     private final int entryHeight = 12;
     private final int backgroundBorderSize = 12;
     public static final int headSize = 12;
+    
+    // Scrolling variables for smooth tab list navigation
+    private float scrollOffset = 0.0f;
+    private float targetScrollOffset = 0.0f;
+    private int maxVisiblePlayers = 0;
+    private final float scrollSpeed = 0.2f; // Animation smoothness factor
 
     public StatsTab(Minecraft mcIn, GuiIngame guiIngameIn) {
         super(mcIn, guiIngameIn);
         this.mc = mcIn;
         this.guiIngame = guiIngameIn;
+    }
+    
+    /**
+     * Calculates the maximum number of players that can fit on screen before overflow
+     * @param scaledRes The current scaled resolution
+     * @param startingY The Y position where player entries start
+     * @return Maximum players that fit on screen
+     */
+    private int calculateMaxVisiblePlayers(ScaledResolution scaledRes, int startingY) {
+        // Available height = screen height - starting position - bottom padding
+        int availableHeight = scaledRes.getScaledHeight() - startingY - this.backgroundBorderSize - this.entryHeight;
+        
+        // Each player entry takes entryHeight + 1 pixel spacing
+        int entryTotalHeight = this.entryHeight + 1;
+        
+        // Calculate how many complete entries fit, minimum 1
+        return Math.max(1, availableHeight / entryTotalHeight);
+    }
+    
+    /**
+     * Updates the scroll animation by interpolating towards the target offset
+     */
+    private void updateScrollAnimation() {
+        // Smooth interpolation towards target
+        float delta = targetScrollOffset - scrollOffset;
+        scrollOffset += delta * scrollSpeed;
+        
+        // Snap to target when very close to avoid floating point precision issues
+        if (Math.abs(delta) < 0.01f) {
+            scrollOffset = targetScrollOffset;
+        }
+    }
+    
+    /**
+     * Handles mouse wheel input for scrolling
+     * @param wheelDelta The scroll wheel delta (positive = scroll up, negative = scroll down)
+     * @param playerListSize Total number of players in the list
+     */
+    public void handleMouseWheel(int wheelDelta, int playerListSize) {
+        if (maxVisiblePlayers >= playerListSize) {
+            // No need to scroll if all players fit on screen
+            return;
+        }
+        
+        // Scroll by 1 player per wheel notch
+        int scrollDirection = wheelDelta > 0 ? -1 : 1;
+        targetScrollOffset += scrollDirection;
+        
+        // Clamp to valid bounds
+        float maxScroll = Math.max(0, playerListSize - maxVisiblePlayers);
+        targetScrollOffset = MathHelper.clamp_float(targetScrollOffset, 0, maxScroll);
+    }
+    
+    /**
+     * Resets scroll position to top
+     */
+    public void resetScroll() {
+        scrollOffset = 0.0f;
+        targetScrollOffset = 0.0f;
+    }
+    
+    /**
+     * Gets the current scroll offset for external use
+     */
+    public float getScrollOffset() {
+        return scrollOffset;
+    }
+    
+    /**
+     * Gets whether the tab list is currently scrollable
+     */
+    public boolean isScrollable() {
+        return maxVisiblePlayers > 0 && maxVisiblePlayers < 80; // 80 is current player limit
     }
 
     public void renderNewPlayerlist(int width, Scoreboard scoreboardIn, ScoreObjective scoreObjectiveIn, List<Stat> gameStatTitleList, String gamemode) {
@@ -108,9 +188,21 @@ public class StatsTab extends GuiPlayerTabOverlay {
         /* only grabs downwards of 80 players */
         playerList = playerList.subList(0, Math.min(playerList.size(), 80));
         int playerListSize = playerList.size();
+        
+        // Calculate maximum visible players based on screen height
+        this.maxVisiblePlayers = calculateMaxVisiblePlayers(scaledRes, startingY);
+        
+        // Update scroll animation
+        updateScrollAnimation();
+        
+        // Calculate visible player slice for rendering
+        int startIndex = Math.max(0, Math.min((int) Math.floor(scrollOffset), playerListSize - maxVisiblePlayers));
+        int endIndex = Math.min(playerListSize, startIndex + maxVisiblePlayers);
+        List<NetworkPlayerInfo> visiblePlayers = playerList.subList(startIndex, endIndex);
+        int visiblePlayerCount = visiblePlayers.size();
 
-        /* the entire tab background */
-        drawRect(startingX - this.backgroundBorderSize - (objectiveName.isEmpty() ? 0 : 5 + this.mc.fontRendererObj.getStringWidth(objectiveName)), startingY - this.backgroundBorderSize, (scaledRes.getScaledWidth() / 2 + width / 2) + this.backgroundBorderSize,  (startingY + (playerListSize + 1) * (this.entryHeight + 1) - 1) + this.backgroundBorderSize, Integer.MIN_VALUE);
+        /* the entire tab background - use visible player count for accurate sizing */
+        drawRect(startingX - this.backgroundBorderSize - (objectiveName.isEmpty() ? 0 : 5 + this.mc.fontRendererObj.getStringWidth(objectiveName)), startingY - this.backgroundBorderSize, (scaledRes.getScaledWidth() / 2 + width / 2) + this.backgroundBorderSize,  (startingY + (visiblePlayerCount + 1) * (this.entryHeight + 1) - 1) + this.backgroundBorderSize, Integer.MIN_VALUE);
 
         /* draw an entry rect for the stat name title */
         drawRect(startingX, startingY, scaledRes.getScaledWidth() / 2 + width / 2, startingY + this.entryHeight, 553648127);
@@ -135,7 +227,27 @@ public class StatsTab extends GuiPlayerTabOverlay {
 
         /* add entryHeight so it starts below the stat name title */
         int ySpacer = startingY + this.entryHeight + 1;
-        for (NetworkPlayerInfo playerInfo : playerList) {
+        int headerBottomY = ySpacer; // Save the Y position where content should start
+        
+        // Apply smooth scrolling offset to Y position
+        float smoothScrollPixels = (scrollOffset - startIndex) * (this.entryHeight + 1);
+        ySpacer -= (int) smoothScrollPixels;
+        
+        // Enable scissor test to clip content above the stat title row
+        ScaledResolution scaledRes2 = new ScaledResolution(this.mc);
+        int scaleFactor = scaledRes2.getScaleFactor();
+        
+        // Calculate scissor rectangle to clip anything that would render above headerBottomY
+        int scissorX = 0;
+        int scissorY = 0; // Start from bottom of screen
+        int scissorWidth = scaledRes2.getScaledWidth() * scaleFactor;
+        // Height should be from bottom of screen to the headerBottomY position
+        int scissorHeight = (scaledRes2.getScaledHeight() - headerBottomY) * scaleFactor;
+        
+        GL11.glEnable(GL11.GL_SCISSOR_TEST);
+        GL11.glScissor(scissorX, scissorY, scissorWidth, scissorHeight);
+        
+        for (NetworkPlayerInfo playerInfo : visiblePlayers) {
             int xSpacer = startingX;
             /* entry background */
             drawRect(xSpacer, ySpacer, scaledRes.getScaledWidth() / 2 + width / 2, ySpacer + this.entryHeight, 553648127);
@@ -225,6 +337,35 @@ public class StatsTab extends GuiPlayerTabOverlay {
 
             /* spaces each entry by the specified pixels */
             ySpacer += this.entryHeight + 1;
+        }
+        
+        // Disable scissor test after rendering players
+        GL11.glDisable(GL11.GL_SCISSOR_TEST);
+        
+        // Draw scroll indicators if there are more players above or below
+        if (playerListSize > maxVisiblePlayers) {
+            int indicatorX = scaledRes.getScaledWidth() / 2 + width / 2 - 10;
+            
+            // Up arrow if there are players above
+            if (startIndex > 0) {
+                String upArrow = ChatColor.WHITE + "▲";
+                this.mc.fontRendererObj.drawStringWithShadow(upArrow, indicatorX, startingY + this.entryHeight + 2, ChatColor.WHITE.getRGB());
+            }
+            
+            // Down arrow if there are players below  
+            if (endIndex < playerListSize) {
+                String downArrow = ChatColor.WHITE + "▼";
+                int downY = startingY + this.entryHeight + 1 + (visiblePlayerCount * (this.entryHeight + 1)) - 10;
+                this.mc.fontRendererObj.drawStringWithShadow(downArrow, indicatorX, downY, ChatColor.WHITE.getRGB());
+            }
+            
+            // Optional: Show scroll position indicator (e.g., "5/20")
+            if (playerListSize > 0) {
+                String scrollInfo = String.format("%d/%d", startIndex + visiblePlayerCount, playerListSize);
+                int infoX = indicatorX - this.mc.fontRendererObj.getStringWidth(scrollInfo) - 5;
+                int infoY = startingY + (this.entryHeight / 2 - 4);
+                this.mc.fontRendererObj.drawStringWithShadow(scrollInfo, infoX, infoY, ChatColor.GRAY.getRGB());
+            }
         }
     }
 

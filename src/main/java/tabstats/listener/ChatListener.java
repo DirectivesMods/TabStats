@@ -29,6 +29,11 @@ public class ChatListener {
                 
                 if (Minecraft.getMinecraft().theWorld != null && TabStats.getTabStats() != null) {
                     TabStats.getTabStats().getStatWorld().rerenderTabList();
+                    // Reset scroll position when game starts
+                    if (TabStats.getTabStats().getGameOverlayListener() != null && 
+                        TabStats.getTabStats().getGameOverlayListener().getStatsTab() != null) {
+                        TabStats.getTabStats().getGameOverlayListener().getStatsTab().resetScroll();
+                    }
                 }
             });
         }

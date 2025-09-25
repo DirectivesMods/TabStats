@@ -4,6 +4,7 @@ import tabstats.config.ModConfig;
 import tabstats.listener.ChatListener;
 import tabstats.listener.GameOverlayListener;
 import tabstats.listener.GuiOpenListener;
+import tabstats.listener.InputListener;
 import tabstats.playerapi.WorldLoader;
 import tabstats.util.References;
 import tabstats.command.TabStatsCommand;
@@ -20,6 +21,7 @@ import java.util.Arrays;
 public class TabStats {
     private static TabStats tabStats;
     private WorldLoader statWorld;
+    private GameOverlayListener gameOverlayListener;
 
     @Mod.EventHandler
     public void preInit(FMLPreInitializationEvent event) {
@@ -30,7 +32,8 @@ public class TabStats {
     @Mod.EventHandler
     public void init(FMLInitializationEvent event) {
         this.statWorld = new WorldLoader();
-        this.registerListeners(statWorld, new GameOverlayListener(), new GuiOpenListener(), new ChatListener());
+        this.gameOverlayListener = new GameOverlayListener();
+        this.registerListeners(statWorld, gameOverlayListener, new GuiOpenListener(), new ChatListener(), new InputListener());
     }
 
     @Mod.EventHandler
@@ -48,5 +51,9 @@ public class TabStats {
 
     public WorldLoader getStatWorld() { 
         return statWorld; 
+    }
+    
+    public GameOverlayListener getGameOverlayListener() {
+        return gameOverlayListener;
     }
 }
