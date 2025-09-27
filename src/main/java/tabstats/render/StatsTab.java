@@ -2,6 +2,7 @@ package tabstats.render;
 
 import tabstats.TabStats;
 import tabstats.playerapi.HPlayer;
+import tabstats.playerapi.StatWorld;
 import tabstats.playerapi.api.stats.Stat;
 import tabstats.playerapi.api.stats.StatDouble;
 import tabstats.playerapi.api.stats.StatInt;
@@ -140,16 +141,18 @@ public class StatsTab extends GuiPlayerTabOverlay {
 
     public void renderNewPlayerlist(int width, Scoreboard scoreboardIn, ScoreObjective scoreObjectiveIn, List<Stat> gameStatTitleList, String gamemode) {
         NetHandlerPlayClient nethandler = this.mc.thePlayer.sendQueue;
+        StatWorld statWorld = TabStats.getTabStats().getStatWorld();
         List<NetworkPlayerInfo> playerList = field_175252_a.sortedCopy(nethandler.getPlayerInfoMap());
         
-        // Filter out NPCs (version 2/3 UUIDs) from the tab list completely
-        // Only show version 4 (real players) and version 1 (potentially nicked players)
+        // Filter out version 3 UUIDs from the tab list completely
+        // Only show version 4 (definitely real players) and version 1 (potentially nicked players) and version 2 (potentially real players and some bots)
         playerList.removeIf(playerInfo -> {
             if (playerInfo.getGameProfile().getId() == null) return true;
-            
+
             int uuidVersion = playerInfo.getGameProfile().getId().version();
-            return uuidVersion != 4 && uuidVersion != 1;
+            return uuidVersion != 4 && uuidVersion != 1 && uuidVersion != 2;
         });
+        
         /* width of the player's name */
         int nameWidth = 0;
         /* width of the player's objective string */
@@ -283,14 +286,22 @@ public class StatsTab extends GuiPlayerTabOverlay {
                 /* how you should render spectators */
             } else {
                 /* how you should render everyone else */
-                HPlayer hPlayer = TabStats.getTabStats().getStatWorld().getPlayerByUUID(gameProfile.getId());
+                String displayName = playerInfo.getDisplayName() != null ? playerInfo.getDisplayName().getFormattedText() : null;
+                HPlayer hPlayer = statWorld == null ? null : statWorld.getPlayerByIdentity(gameProfile.getId(), displayName, gameProfile.getName());
                 if (hPlayer != null) {
                     /* render tabstats here */
                     if (hPlayer.isNicked()) {
-                        // Always display nicked players as "[NICKED] <nick>" (nick in white) regardless of obfuscation or team formatting
-                        name = ChatColor.WHITE + "[" + ChatColor.RED + "NICKED" + ChatColor.WHITE + "] " + ChatColor.WHITE + gameProfile.getName();
+                        name = this.getHPlayerName(playerInfo, hPlayer);
                     } else {
-                        name = name.contains(ChatColor.OBFUSCATE.toString()) ? hPlayer.getPlayerRankColor() + hPlayer.getPlayerName() : this.getHPlayerName(playerInfo, hPlayer);
+                        boolean obfuscated = name.contains(ChatColor.OBFUSCATE.toString());
+                        if (obfuscated) {
+                            ScorePlayerTeam liveTeam = playerInfo.getPlayerTeam();
+                            String teamPrefix = liveTeam != null ? liveTeam.getColorPrefix() : "";
+                            String color = teamPrefix.isEmpty() ? hPlayer.getPlayerRankColor() : teamPrefix;
+                            name = color + hPlayer.getPlayerName();
+                        } else {
+                            name = this.getHPlayerName(playerInfo, hPlayer);
+                        }
                     }
 
                     /* gets bedwars if the gamemode is not a game added to the hplayer's game list, otherwise, grab the game stats based on the scoreboard */
@@ -454,17 +465,18 @@ public class StatsTab extends GuiPlayerTabOverlay {
     /* Custom Player Name Formatter */
     public String getHPlayerName(NetworkPlayerInfo playerInfo, HPlayer hPlayer) {
         ScorePlayerTeam team = playerInfo.getPlayerTeam();
+        String teamPrefix = team != null ? team.getColorPrefix() : "";
+        String teamSuffix = team != null ? team.getColorSuffix() : "";
         String playerRank = hPlayer.getPlayerRank();
 
-        // If the player is nicked, force the display format to "[NICKED] <nick>" and color name white
         if (hPlayer.isNicked()) {
-            return ChatColor.WHITE + "[" + ChatColor.RED + "NICKED" + ChatColor.WHITE + "] " + ChatColor.WHITE + playerInfo.getGameProfile().getName();
+            return teamPrefix + ChatColor.WHITE + "[" + ChatColor.RED + "NICKED" + ChatColor.WHITE + "] " + ChatColor.WHITE + playerInfo.getGameProfile().getName() + teamSuffix;
         }
 
         if (team != null) {
             /** remove [NON] as it's not shown in regular tab */
-            String colorPrefix = team.getColorPrefix();
-            
+            String colorPrefix = teamPrefix;
+
             // Don't remove gray color for non-ranked players - preserve it
             if (ChatColor.stripColor(colorPrefix).contains(ChatColor.stripColor(playerRank)) && !playerRank.equals("§7")) {
                 playerRank = "";
@@ -477,9 +489,9 @@ public class StatsTab extends GuiPlayerTabOverlay {
             }
 
             if (this.rankBeforePrefix) {
-                return playerRank + colorPrefix + playerInfo.getGameProfile().getName() + team.getColorSuffix();
+                return playerRank + colorPrefix + playerInfo.getGameProfile().getName() + teamSuffix;
             } else {
-                return colorPrefix + playerRank + playerInfo.getGameProfile().getName() + team.getColorSuffix();
+                return colorPrefix + playerRank + playerInfo.getGameProfile().getName() + teamSuffix;
             }
         }
 

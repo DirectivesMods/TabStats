@@ -50,7 +50,7 @@ public class HPlayer {
     public HPlayer(String playerUUID, String playerName) {
         this.playerUUID = playerUUID;
         this.playerName = playerName;
-        this.playerRank = ChatColor.GRAY.toString();
+        this.playerRank = "";
 
         this.gameMap = new HashMap<>();
     }
@@ -167,18 +167,22 @@ public class HPlayer {
     }
 
     public String getPlayerRank() {
-        String baseRank = this.playerRank == null || this.playerRank.isEmpty() ? ChatColor.GRAY.toString() : this.playerRank;
-        
+        String baseRank = this.playerRank == null ? "" : this.playerRank;
+
         // If player is detected as nicked, prepend nick indicator
         if (isNicked()) {
             return ChatColor.WHITE + "[" + ChatColor.RED + "NICKED" + ChatColor.WHITE + "] " + baseRank;
         }
-        
+
         return baseRank;
     }
 
     public String getPlayerRankColor() {
-        return this.playerRank == null || this.playerRank.isEmpty() ? ChatColor.GRAY.toString() : this.playerRank.substring(0, 2);
+        if (this.playerRank == null || this.playerRank.length() < 2) {
+            return ChatColor.RESET.toString();
+        }
+
+        return this.playerRank.substring(0, 2);
     }
 
     public HGameBase getGame(String gameName) {

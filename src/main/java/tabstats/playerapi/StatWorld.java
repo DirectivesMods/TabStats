@@ -8,6 +8,7 @@ import tabstats.playerapi.exception.ApiRequestException;
 import tabstats.playerapi.exception.BadJsonException;
 import tabstats.playerapi.exception.InvalidKeyException;
 import tabstats.playerapi.exception.PlayerNullException;
+import tabstats.util.ChatColor;
 import tabstats.util.Handler;
 import tabstats.util.NickDetector;
 import com.mojang.authlib.GameProfile;
@@ -23,6 +24,7 @@ import java.util.concurrent.ConcurrentHashMap;
 
 public class StatWorld {
     private final ConcurrentHashMap<UUID, HPlayer> worldPlayers;
+    private final Map<String, HPlayer> nameAliases;
     protected final List<UUID> statAssembly = new ArrayList<>();
     protected final List<UUID> existedMoreThan5Seconds = new ArrayList<>();
     protected final Map<UUID, Integer> timeCheck = new HashMap<>();
@@ -31,19 +33,22 @@ public class StatWorld {
 
     public StatWorld() {
         worldPlayers = new ConcurrentHashMap<>();
+        nameAliases = new ConcurrentHashMap<>();
     }
 
     public void removePlayer(UUID playerUUID) {
-        worldPlayers.remove(playerUUID);
+        HPlayer removed = worldPlayers.remove(playerUUID);
         // Clean up tracking maps to prevent memory leaks
         nickRetryTicks.remove(playerUUID);
         timeCheck.remove(playerUUID);
         statAssembly.remove(playerUUID);
         existedMoreThan5Seconds.remove(playerUUID);
+        removeAliases(removed);
     }
 
     public void addPlayer(UUID playerUUID, HPlayer player) {
         worldPlayers.put(playerUUID, player);
+        registerAlias(player, player.getPlayerName());
     }
 
     public void clearPlayers() {
@@ -53,6 +58,7 @@ public class StatWorld {
         timeCheck.clear();
         statAssembly.clear();
         existedMoreThan5Seconds.clear();
+        nameAliases.clear();
     }
 
     /**
@@ -90,11 +96,12 @@ public class StatWorld {
      */
     public void recheckPlayer(UUID uuid) {
         // Remove specific player to force re-fetch
-        worldPlayers.remove(uuid);
+        HPlayer removed = worldPlayers.remove(uuid);
         statAssembly.remove(uuid);
         existedMoreThan5Seconds.remove(uuid);
         timeCheck.remove(uuid);
         nickRetryTicks.remove(uuid);
+        removeAliases(removed);
     }
 
     public ConcurrentHashMap<UUID, HPlayer> getWorldPlayers() {
@@ -105,6 +112,33 @@ public class StatWorld {
 
     public HPlayer getPlayerByUUID(UUID uuid) {
         return this.worldPlayers.get(uuid);
+    }
+
+    public HPlayer getPlayerByIdentity(UUID uuid, String... fallbackName) {
+        HPlayer player = this.worldPlayers.get(uuid);
+        if (player != null) {
+            return player;
+        }
+
+        if (fallbackName != null) {
+            for (String candidate : fallbackName) {
+                if (candidate == null) {
+                    continue;
+                }
+
+                String normalized = candidate.trim();
+                if (normalized.isEmpty()) {
+                    continue;
+                }
+
+                HPlayer aliased = nameAliases.get(normalized.toLowerCase(Locale.ROOT));
+                if (aliased != null) {
+                    return aliased;
+                }
+            }
+        }
+
+        return null;
     }
 
     public HPlayer getPlayerByName(String name) {
@@ -129,7 +163,19 @@ public class StatWorld {
             String playerName = entityPlayer.getName();
             String playerUUID = entityPlayer.getUniqueID().toString().replace("-", "");
 
+            String displayComponent = entityPlayer.getDisplayName() != null ? entityPlayer.getDisplayName().getFormattedText() : null;
+            HPlayer existing = getPlayerByIdentity(uuid, displayComponent, playerName);
+            if (existing != null) {
+                this.addPlayer(uuid, existing);
+                this.removeFromStatAssembly(uuid);
+                nickRetryTicks.remove(uuid);
+                registerAlias(existing, displayComponent);
+                return;
+            }
+
             HPlayer hPlayer = new HPlayer(playerUUID, playerName);
+            registerAlias(hPlayer, playerName);
+            registerAlias(hPlayer, displayComponent);
 
             // Fire both API call AND nick detection simultaneously for speed
             boolean apiSuccess = false;
@@ -143,6 +189,7 @@ public class StatWorld {
 
                 hPlayer.setPlayerRank(playerObject);
                 hPlayer.setPlayerName(playerObject.get("displayname").getAsString());
+                registerAlias(hPlayer, hPlayer.getPlayerName());
 
                 Bedwars bw = new Bedwars(playerName, playerUUID, wholeObject);
                 Duels duels = new Duels(playerName, playerUUID, wholeObject);
@@ -258,5 +305,44 @@ public class StatWorld {
         } catch (Exception ignored) {
             return null;
         }
+    }
+
+    private void registerAlias(HPlayer player, String name) {
+        if (player == null || name == null) {
+            return;
+        }
+
+        String normalized = name.trim();
+        if (normalized.isEmpty()) {
+            return;
+        }
+
+        storeAlias(normalized, player);
+
+        String stripped = ChatColor.stripColor(normalized);
+        if (stripped != null && !stripped.equalsIgnoreCase(normalized)) {
+            storeAlias(stripped, player);
+        }
+    }
+
+    private void removeAliases(HPlayer player) {
+        if (player == null) {
+            return;
+        }
+
+        nameAliases.entrySet().removeIf(entry -> entry.getValue() == player);
+    }
+
+    private void storeAlias(String name, HPlayer player) {
+        if (name == null) {
+            return;
+        }
+
+        String trimmed = name.trim();
+        if (trimmed.isEmpty()) {
+            return;
+        }
+
+        nameAliases.put(trimmed.toLowerCase(Locale.ROOT), player);
     }
 }

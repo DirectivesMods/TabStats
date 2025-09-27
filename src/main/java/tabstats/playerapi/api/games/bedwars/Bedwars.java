@@ -95,7 +95,7 @@ public class Bedwars extends BedwarsUtil {
 
         int starVal = 0;
         try { if (this.star != null) starVal = ((StatInt)this.star).getValue(); } catch (Exception ignored) {}
-        StatString star = new StatString("Star");
+        StatString star = new StatString("STAR");
         star.setValue(this.getStarWithColor(starVal));
         returnList.add(0, star);
         return returnList;

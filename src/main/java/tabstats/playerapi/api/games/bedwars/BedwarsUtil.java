@@ -177,6 +177,7 @@ public abstract class BedwarsUtil extends HGameBase {
         PRESTIGE_STYLES.put(base, mono(c, c));
     }
 
+    // refers to https://hypixel.fandom.com/wiki/Bed_Wars#Prestiges
     static {
         putMono(0, ChatColor.GRAY);
         putMono(100, ChatColor.WHITE);
