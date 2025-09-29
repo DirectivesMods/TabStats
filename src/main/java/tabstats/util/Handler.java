@@ -17,7 +17,17 @@ public class Handler {
     );
 
     private static Locale getLocale() {
-        return new Locale(System.getProperty("user.language"), System.getProperty("user.country"));
+        String language = System.getProperty("user.language");
+        if (language == null || language.trim().isEmpty()) {
+            return Locale.getDefault();
+        }
+
+        String country = System.getProperty("user.country");
+        if (country == null || country.trim().isEmpty()) {
+            return new Locale(language);
+        }
+
+        return new Locale(language, country);
     }
 
     public static void asExecutor(Runnable runnable) {

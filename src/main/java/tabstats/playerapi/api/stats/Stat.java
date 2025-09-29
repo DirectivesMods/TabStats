@@ -16,7 +16,6 @@ public abstract class Stat {
         this.statName = statName;
     }
 
-    //    Need to add GameMode support
     public abstract void setStat();
 
     public String getJsonName() { return this.jsonName; }

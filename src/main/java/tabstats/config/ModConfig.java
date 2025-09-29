@@ -18,6 +18,7 @@ public class ModConfig {
     private String apiKey;
     private String lastApiKey; // Track the last API key to detect changes
     private static ModConfig instance;
+    private File configFile;
 
     public static ModConfig getInstance() {
         if (instance == null) instance = new ModConfig();
@@ -58,7 +59,7 @@ public class ModConfig {
         // Only update if the key actually changed
         String normalizedKey = key == null ? "" : key.trim();
         String currentKey = this.apiKey == null ? "" : this.apiKey.trim();
-        
+
         if (!normalizedKey.equals(currentKey)) {
             this.apiKey = key;
             // Update lastApiKey to prevent duplicate change detection
@@ -68,30 +69,42 @@ public class ModConfig {
 
     @SuppressWarnings("ResultOfMethodCallIgnored")
     private void makeFile() {
+        File file = getFile();
+        if (file.exists()) {
+            return;
+        }
+
+        File parent = file.getParentFile();
+        if (parent != null && !parent.exists()) {
+            parent.mkdirs();
+        }
+
         try {
-            if (!getFile().exists()) {
-                getFile().getParentFile().mkdirs();
-                getFile().createNewFile();
-                try (FileWriter writer = new FileWriter(getFile())) {
-                    // Write a placeholder apikey.json so users know the expected format
+            if (file.createNewFile()) {
+                try (FileWriter writer = new FileWriter(file)) {
                     String placeholder = "{\n  \"ApiKey\": \"XXXXXXXX-XXXX-XXXX-XXXX-XXXXXXXXXXXX\"\n}\n";
                     writer.write(placeholder);
                     writer.flush();
-                } catch (Exception e) {
-                    // Silently handle file write errors
                 }
             }
-        } catch (Exception e) {
+        } catch (Exception ignored) {
             // Silently handle file creation errors
         }
     }
 
     public void loadConfigFromFile() {
-        if (!getFile().exists()) makeFile();
+        if (!getFile().exists()) {
+            makeFile();
+        }
         apiKey = getString(APIKEY);
+        lastApiKey = apiKey;
     }
 
     public File getFile() {
+        if (configFile != null) {
+            return configFile;
+        }
+
         File folder = null;
         try {
             Minecraft mc = Minecraft.getMinecraft();
@@ -107,8 +120,12 @@ public class ModConfig {
             folder = new File(userHome + File.separator + ".minecraft", "tabstats");
         }
 
-        if (!folder.exists()) folder.mkdirs();
-        return new File(folder, "apikey.json");
+        if (!folder.exists()) {
+            folder.mkdirs();
+        }
+
+        configFile = new File(folder, "apikey.json");
+        return configFile;
     }
 
     public void init() {
@@ -118,7 +135,8 @@ public class ModConfig {
     public void save() {
         HashMap<String, Object> map = new HashMap<>();
         map.put(APIKEY.toString(), this.apiKey); // Use the internal field, not getApiKey()
-        try (Writer writer = new FileWriter(getFile())) {
+        File file = getFile();
+        try (Writer writer = new FileWriter(file)) {
             Handler.getGson().toJson(map, writer);
             writer.flush(); // Ensure it's written to disk
         } catch (Exception ex) {
@@ -127,15 +145,22 @@ public class ModConfig {
     }
 
     public String getString(ModConfigNames key) {
+        File file = getFile();
+        if (!file.exists()) {
+            return "";
+        }
+
         JsonParser parser = new JsonParser();
-        String s = "";
-        try {
-            JsonObject object = (JsonObject) parser.parse(new FileReader(getFile()));
-            s = object.get(key.toString()).getAsString();
-        } catch (NullPointerException ignored) {
+
+        try (FileReader reader = new FileReader(file)) {
+            JsonObject object = parser.parse(reader).getAsJsonObject();
+            if (!object.has(key.toString())) {
+                return "";
+            }
+            return object.get(key.toString()).getAsString();
         } catch (Exception ex) {
             // Silently handle read errors
+            return "";
         }
-        return s;
     }
 }

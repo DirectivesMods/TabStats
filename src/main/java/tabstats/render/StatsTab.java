@@ -35,6 +35,7 @@ import org.apache.commons.lang3.StringUtils;
 import org.apache.commons.lang3.text.WordUtils;
 import org.lwjgl.opengl.GL11;
 
+import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.List;
 import java.util.UUID;
@@ -42,6 +43,7 @@ import java.util.regex.Pattern;
 
 public class StatsTab extends GuiPlayerTabOverlay {
     private static final Ordering<NetworkPlayerInfo> field_175252_a = Ordering.from(new StatsTab.PlayerComparator());
+    private static final int MAX_TAB_PLAYERS = 80;
     private static final Pattern VALID_USERNAME = Pattern.compile("^[A-Za-z0-9_]{3,16}$");
     private final Minecraft mc;
     private final GuiIngame guiIngame;
@@ -111,7 +113,7 @@ public class StatsTab extends GuiPlayerTabOverlay {
             return;
         }
 
-        int effectiveListSize = this.lastPlayerListSize > 0 ? this.lastPlayerListSize : Math.min(playerListSize, 80);
+        int effectiveListSize = this.lastPlayerListSize > 0 ? this.lastPlayerListSize : Math.min(playerListSize, MAX_TAB_PLAYERS);
 
         if (maxVisiblePlayers >= effectiveListSize) {
             // No need to scroll if all players fit on screen
@@ -146,79 +148,28 @@ public class StatsTab extends GuiPlayerTabOverlay {
      * Gets whether the tab list is currently scrollable
      */
     public boolean isScrollable() {
-        return maxVisiblePlayers > 0 && maxVisiblePlayers < 80; // 80 is current player limit
+        return maxVisiblePlayers > 0 && maxVisiblePlayers < MAX_TAB_PLAYERS;
     }
 
     public void renderNewPlayerlist(int width, Scoreboard scoreboardIn, ScoreObjective scoreObjectiveIn, List<Stat> gameStatTitleList, String gamemode) {
-        NetHandlerPlayClient nethandler = this.mc.thePlayer.sendQueue;
+        NetHandlerPlayClient netHandler = this.mc.thePlayer.sendQueue;
         StatWorld statWorld = TabStats.getTabStats().getStatWorld();
-        List<NetworkPlayerInfo> playerList = field_175252_a.sortedCopy(nethandler.getPlayerInfoMap());
-        
-        // Filter out version 3 UUIDs from the tab list completely
-        // Only show version 4 (definitely real players), version 2 (Hypixel lobby inserts) when verified, and version 1 (potentially nicked players)
-        playerList.removeIf(playerInfo -> {
-            if (playerInfo.getGameProfile().getId() == null) return true;
+        List<NetworkPlayerInfo> playerList = collectEligiblePlayers(netHandler, statWorld);
 
-            UUID playerUuid = playerInfo.getGameProfile().getId();
-            int uuidVersion = playerUuid.version();
-            if (uuidVersion != 4 && uuidVersion != 1 && uuidVersion != 2) {
-                return true;
-            }
-
-            if (uuidVersion == 2 && statWorld.getPlayerByUUID(playerUuid) == null) {
-                return true;
-            }
-
-            String strippedName = ChatColor.stripColor(this.getPlayerName(playerInfo));
-            if (strippedName != null && strippedName.trim().startsWith("[NPC]")) {
-                return true;
-            }
-
-            String profileName = playerInfo.getGameProfile().getName();
-            return profileName == null || !VALID_USERNAME.matcher(profileName).matches();
-        });
-        
-        /* width of the player's name */
-        int nameWidth = 0;
-        /* width of the player's objective string */
-        int objectiveWidth = 0;
-        /* retrieve scaled resolution for accurate dimensions */
         ScaledResolution scaledRes = new ScaledResolution(this.mc);
-        /* where the render should start on x plane */
         int startingX = scaledRes.getScaledWidth() / 2 - width / 2;
         int startingY = 20;
 
-        /* this is kind of useless...as nameWidth and objectiveWidth aren't used */
-        for (NetworkPlayerInfo playerInfo : playerList) {
-            int strWidth = this.mc.fontRendererObj.getStringWidth(this.getPlayerName(playerInfo));
-            nameWidth = Math.max(nameWidth, strWidth);
-
-            if (scoreObjectiveIn != null && scoreObjectiveIn.getRenderType() != IScoreObjectiveCriteria.EnumRenderType.HEARTS) {
-                strWidth = this.mc.fontRendererObj.getStringWidth(" " + scoreboardIn.getValueFromObjective(playerInfo.getGameProfile().getName(), scoreObjectiveIn).getScoreScoreboard());
-                objectiveWidth = Math.max(objectiveWidth, strWidth);
-            }
-        }
-
-        /* initialize objectiveName outside of the below if block, so we can render it after the background */
         String objectiveName = "";
-        /* meant for initializing the render of score objective */
         if (scoreObjectiveIn != null) {
-            /* this is usually the raw name meant for internal usage */
-            String objectiveRawName = WordUtils.capitalize(scoreObjectiveIn.getName().replace("_", " "));
-
-            /* this is usually the formatted name meant for display */
-            String objectiveDisplayname = WordUtils.capitalize(scoreObjectiveIn.getDisplayName().replace("_", ""));
-
-            /* you can change this value to objectiveRawName, but I like using the displayname */
-            objectiveName = objectiveDisplayname;
+            String objectiveDisplayName = WordUtils.capitalize(scoreObjectiveIn.getDisplayName().replace("_", ""));
+            objectiveName = objectiveDisplayName;
         }
 
-        /* only grabs downwards of 80 players */
-        playerList = playerList.subList(0, Math.min(playerList.size(), 80));
+        playerList = playerList.subList(0, Math.min(playerList.size(), MAX_TAB_PLAYERS));
         int playerListSize = playerList.size();
         this.lastPlayerListSize = playerListSize;
 
-        // Calculate maximum visible players based on screen height
         this.maxVisiblePlayers = calculateMaxVisiblePlayers(scaledRes, startingY);
 
         float maxScroll = Math.max(0, playerListSize - maxVisiblePlayers);
@@ -227,68 +178,52 @@ public class StatsTab extends GuiPlayerTabOverlay {
             scrollOffset = 0.0f;
         }
 
-        // Update scroll animation
         updateScrollAnimation();
 
-        // Calculate visible player slice for rendering
-        int startIndex = Math.max(0, Math.min((int) Math.floor(scrollOffset), playerListSize - maxVisiblePlayers));
+        int startIndex = Math.max(0, Math.min((int)Math.floor(scrollOffset), playerListSize - maxVisiblePlayers));
         int endIndex = Math.min(playerListSize, startIndex + maxVisiblePlayers);
         List<NetworkPlayerInfo> visiblePlayers = playerList.subList(startIndex, endIndex);
         int visiblePlayerCount = visiblePlayers.size();
 
-        /* the entire tab background - use visible player count for accurate sizing */
-        drawRect(startingX - this.backgroundBorderSize - (objectiveName.isEmpty() ? 0 : 5 + this.mc.fontRendererObj.getStringWidth(objectiveName)), startingY - this.backgroundBorderSize, (scaledRes.getScaledWidth() / 2 + width / 2) + this.backgroundBorderSize,  (startingY + (visiblePlayerCount + 1) * (this.entryHeight + 1) - 1) + this.backgroundBorderSize, Integer.MIN_VALUE);
+        int textBaselineOffset = this.entryHeight / 2 - 4;
+        int backgroundLeft = startingX - this.backgroundBorderSize - (objectiveName.isEmpty() ? 0 : 5 + this.mc.fontRendererObj.getStringWidth(objectiveName));
+        int backgroundRight = scaledRes.getScaledWidth() / 2 + width / 2 + this.backgroundBorderSize;
+        int backgroundBottom = startingY + (visiblePlayerCount + 1) * (this.entryHeight + 1) - 1 + this.backgroundBorderSize;
+        drawRect(backgroundLeft, startingY - this.backgroundBorderSize, backgroundRight, backgroundBottom, Integer.MIN_VALUE);
 
-        /* draw an entry rect for the stat name title */
         drawRect(startingX, startingY, scaledRes.getScaledWidth() / 2 + width / 2, startingY + this.entryHeight, 553648127);
 
-        /* Start with drawing the name and objective, as they will always be here and aren't inside of the Stat List */
         int statXSpacer = startingX + headSize + 2;
-        this.mc.fontRendererObj.drawStringWithShadow(ChatColor.BOLD + "NAME", statXSpacer, startingY + (this.entryHeight / 2 - 4), ChatColor.WHITE.getRGB());
-        this.mc.fontRendererObj.drawStringWithShadow(objectiveName, startingX - (this.mc.fontRendererObj.getStringWidth(objectiveName) + 5), startingY + (this.entryHeight / 2 - 4), ChatColor.WHITE.getRGB());
+        this.mc.fontRendererObj.drawStringWithShadow(ChatColor.BOLD + "NAME", statXSpacer, startingY + textBaselineOffset, ChatColor.WHITE.getRGB());
+        this.mc.fontRendererObj.drawStringWithShadow(objectiveName, startingX - (this.mc.fontRendererObj.getStringWidth(objectiveName) + 5), startingY + textBaselineOffset, ChatColor.WHITE.getRGB());
 
-        /* adds longest name possible in pixels to statXSpacer since name's are way longer than stats */
         statXSpacer += this.mc.fontRendererObj.getStringWidth(ChatColor.BOLD + "[YOUTUBE] WWWWWWWWWWWWWWWW") + 10;
 
-        /* loops through all the stats that should be displayed and renders their stat titles */
         for (Stat stat : gameStatTitleList) {
             String statName = stat.getStatName();
             String statLabel = statName == null ? "" : statName.toUpperCase();
-            this.mc.fontRendererObj.drawStringWithShadow(ChatColor.BOLD + statLabel, statXSpacer, startingY + (this.entryHeight / 2 - 4), ChatColor.WHITE.getRGB());
-
-            /* adds spacer for next stat (use uppercase label width to match header) */
+            this.mc.fontRendererObj.drawStringWithShadow(ChatColor.BOLD + statLabel, statXSpacer, startingY + textBaselineOffset, ChatColor.WHITE.getRGB());
             statXSpacer += this.mc.fontRendererObj.getStringWidth(ChatColor.BOLD + statLabel) + 10;
         }
 
-        /* add entryHeight so it starts below the stat name title */
         int ySpacer = startingY + this.entryHeight + 1;
-        int headerBottomY = ySpacer; // Save the Y position where content should start
-        
-        // Apply smooth scrolling offset to Y position
+        int headerBottomY = ySpacer;
+
         float fractionalOffset = MathHelper.clamp_float(scrollOffset - startIndex, 0.0f, 0.999f);
-        float smoothScrollPixels = fractionalOffset * (this.entryHeight + 1);
-        ySpacer -= (int) smoothScrollPixels;
-        
-        // Enable scissor test to clip content above the stat title row
-        ScaledResolution scaledRes2 = new ScaledResolution(this.mc);
-        int scaleFactor = scaledRes2.getScaleFactor();
-        
-        // Calculate scissor rectangle to clip anything that would render above headerBottomY
-        int scissorX = 0;
-        int scissorY = 0; // Start from bottom of screen
-        int scissorWidth = scaledRes2.getScaledWidth() * scaleFactor;
-        // Height should be from bottom of screen to the headerBottomY position
-        int scissorHeight = (scaledRes2.getScaledHeight() - headerBottomY) * scaleFactor;
-        
+        int smoothScrollPixels = (int)(fractionalOffset * (this.entryHeight + 1));
+        ySpacer -= smoothScrollPixels;
+
+        int scaleFactor = scaledRes.getScaleFactor();
+        int scissorWidth = scaledRes.getScaledWidth() * scaleFactor;
+        int scissorHeight = (scaledRes.getScaledHeight() - headerBottomY) * scaleFactor;
+
         GL11.glEnable(GL11.GL_SCISSOR_TEST);
-        GL11.glScissor(scissorX, scissorY, scissorWidth, scissorHeight);
-        
+        GL11.glScissor(0, 0, scissorWidth, scissorHeight);
+
         for (NetworkPlayerInfo playerInfo : visiblePlayers) {
             int xSpacer = startingX;
-            /* entry background */
             drawRect(xSpacer, ySpacer, scaledRes.getScaledWidth() / 2 + width / 2, ySpacer + this.entryHeight, 553648127);
 
-            /* ignore this, this is just preparing the gl canvas for rendering */
             GlStateManager.color(1.0F, 1.0F, 1.0F, 1.0F);
             GlStateManager.enableAlpha();
             GlStateManager.enableBlend();
@@ -297,32 +232,26 @@ public class StatsTab extends GuiPlayerTabOverlay {
             String name = this.getPlayerName(playerInfo);
             GameProfile gameProfile = playerInfo.getGameProfile();
 
-            boolean flag = this.mc.isIntegratedServerRunning() || this.mc.getNetHandler().getNetworkManager().getIsencrypted();
-            if (flag) {
-                /* renders the player's face */
+            boolean renderSkin = this.mc.isIntegratedServerRunning() || this.mc.getNetHandler().getNetworkManager().getIsencrypted();
+            if (renderSkin) {
                 EntityPlayer entityPlayer = this.mc.theWorld.getPlayerEntityByUUID(gameProfile.getId());
-                boolean flag1 = entityPlayer != null && entityPlayer.isWearing(EnumPlayerModelParts.CAPE) && (gameProfile.getName().equals("Dinnerbone") || gameProfile.getName().equals("Grumm"));
+                boolean upsideDown = entityPlayer != null && entityPlayer.isWearing(EnumPlayerModelParts.CAPE) && ("Dinnerbone".equals(gameProfile.getName()) || "Grumm".equals(gameProfile.getName()));
                 this.mc.getTextureManager().bindTexture(playerInfo.getLocationSkin());
-                int u = 8 + (flag1 ? 8 : 0);
-                int v = 8 * (flag1 ? -1 : 1);
+                int u = 8 + (upsideDown ? 8 : 0);
+                int v = 8 * (upsideDown ? -1 : 1);
                 Gui.drawScaledCustomSizeModalRect(xSpacer, ySpacer, 8.0F, u, 8, v, headSize, headSize, 64.0F, 64.0F);
 
                 if (entityPlayer != null && entityPlayer.isWearing(EnumPlayerModelParts.HAT)) {
                     Gui.drawScaledCustomSizeModalRect(xSpacer, ySpacer, 40.0F, u, 8, v, headSize, headSize, 64.0F, 64.0F);
                 }
 
-                /* adds x amount of pixels so that rendering name won't overlap with skin render */
                 xSpacer += headSize + 2;
             }
 
-            if (playerInfo.getGameType() == WorldSettings.GameType.SPECTATOR) {
-                /* how you should render spectators */
-            } else {
-                /* how you should render everyone else */
+            if (playerInfo.getGameType() != WorldSettings.GameType.SPECTATOR) {
                 String displayName = playerInfo.getDisplayName() != null ? playerInfo.getDisplayName().getFormattedText() : null;
                 HPlayer hPlayer = statWorld == null ? null : statWorld.getPlayerByIdentity(gameProfile.getId(), displayName, gameProfile.getName());
                 if (hPlayer != null) {
-                    /* render tabstats here */
                     if (hPlayer.isNicked()) {
                         name = this.getHPlayerName(playerInfo, hPlayer);
                     } else {
@@ -337,72 +266,100 @@ public class StatsTab extends GuiPlayerTabOverlay {
                         }
                     }
 
-                    /* gets bedwars if the gamemode is not a game added to the hplayer's game list, otherwise, grab the game stats based on the scoreboard */
                     List<Stat> statList = hPlayer.getFormattedGameStats(gamemode);
                     if (statList == null || statList.isEmpty()) {
                         statList = hPlayer.getFormattedGameStats("BEDWARS");
                     }
-                    /* start at the first stat */
+
                     int valueXSpacer = startingX + this.mc.fontRendererObj.getStringWidth(ChatColor.BOLD + "[YOUTUBE] WWWWWWWWWWWWWWWW") + 10 + headSize + 2;
 
                     for (Stat stat : statList) {
                         String statValue = "";
-
-                        /* finds the exact stat type so it can properly retrieve the stat value */
                         switch (stat.getType()) {
                             case INT:
-                                statValue = Integer.toString(((StatInt)stat).getValue());
+                                statValue = Integer.toString(((StatInt) stat).getValue());
                                 break;
                             case DOUBLE:
-                                statValue = Double.toString(((StatDouble)stat).getValue());
+                                statValue = Double.toString(((StatDouble) stat).getValue());
                                 break;
                             case STRING:
-                                statValue = ((StatString)stat).getValue();
+                                statValue = ((StatString) stat).getValue();
                                 break;
                         }
 
-                        // draws the stats
-                        this.mc.fontRendererObj.drawStringWithShadow(statValue, valueXSpacer, ySpacer + (this.entryHeight / 2 - 4), ChatColor.WHITE.getRGB());
-                        /* match header spacing: use uppercase stat name width */
+                        this.mc.fontRendererObj.drawStringWithShadow(statValue, valueXSpacer, ySpacer + textBaselineOffset, ChatColor.WHITE.getRGB());
                         valueXSpacer += this.mc.fontRendererObj.getStringWidth(ChatColor.BOLD + (stat.getStatName() == null ? "" : stat.getStatName().toUpperCase())) + 10;
                     }
                 }
 
-                // draws the players name
-                this.mc.fontRendererObj.drawStringWithShadow(name, xSpacer, ySpacer + (this.entryHeight / 2 - 4), -1);
+                this.mc.fontRendererObj.drawStringWithShadow(name, xSpacer, ySpacer + textBaselineOffset, -1);
             }
 
-            if (scoreObjectiveIn != null & playerInfo.getGameType() != WorldSettings.GameType.SPECTATOR) {
-                /* if player isn't a spectator and scoreobjective isn't null, render their score objective */
-
-                /* not really sure how all objectives are drawn, but I understand HP and that's usually what Hypixel uses lol */
+            if (scoreObjectiveIn != null && playerInfo.getGameType() != WorldSettings.GameType.SPECTATOR) {
                 this.drawScoreboardValues(scoreObjectiveIn, ySpacer, gameProfile.getName(), xSpacer, startingX - 5, playerInfo);
             }
 
-            /* spaces each entry by the specified pixels */
             ySpacer += this.entryHeight + 1;
         }
-        
-        // Disable scissor test after rendering players
+
         GL11.glDisable(GL11.GL_SCISSOR_TEST);
-        
-        // Draw scroll indicators if there are more players above or below
+
         if (playerListSize > maxVisiblePlayers) {
             int indicatorX = scaledRes.getScaledWidth() / 2 + width / 2 - 10;
-            
-            // Up arrow if there are players above
+
             if (startIndex > 0) {
                 String upArrow = ChatColor.WHITE + "▲";
                 this.mc.fontRendererObj.drawStringWithShadow(upArrow, indicatorX, startingY + this.entryHeight + 2, ChatColor.WHITE.getRGB());
             }
-            
-            // Down arrow if there are players below  
+
             if (endIndex < playerListSize) {
                 String downArrow = ChatColor.WHITE + "▼";
                 int downY = startingY + this.entryHeight + 1 + (visiblePlayerCount * (this.entryHeight + 1)) - 10;
                 this.mc.fontRendererObj.drawStringWithShadow(downArrow, indicatorX, downY, ChatColor.WHITE.getRGB());
             }
         }
+    }
+
+    private List<NetworkPlayerInfo> collectEligiblePlayers(NetHandlerPlayClient netHandler, StatWorld statWorld) {
+        List<NetworkPlayerInfo> sortedPlayers = field_175252_a.sortedCopy(netHandler.getPlayerInfoMap());
+        List<NetworkPlayerInfo> filtered = new ArrayList<>(sortedPlayers.size());
+        for (NetworkPlayerInfo info : sortedPlayers) {
+            if (isEligiblePlayer(info, statWorld)) {
+                filtered.add(info);
+            }
+        }
+        return filtered;
+    }
+
+    private boolean isEligiblePlayer(NetworkPlayerInfo playerInfo, StatWorld statWorld) {
+        GameProfile profile = playerInfo.getGameProfile();
+        if (profile == null) {
+            return false;
+        }
+
+        UUID playerUuid = profile.getId();
+        if (playerUuid == null) {
+            return false;
+        }
+
+        int uuidVersion = playerUuid.version();
+        if (uuidVersion != 4 && uuidVersion != 1 && uuidVersion != 2) {
+            return false;
+        }
+
+        if (uuidVersion == 2) {
+            if (statWorld == null || statWorld.getPlayerByUUID(playerUuid) == null) {
+                return false;
+            }
+        }
+
+        String strippedName = ChatColor.stripColor(this.getPlayerName(playerInfo));
+        if (strippedName != null && strippedName.trim().startsWith("[NPC]")) {
+            return false;
+        }
+
+        String profileName = profile.getName();
+        return profileName != null && VALID_USERNAME.matcher(profileName).matches();
     }
 
     private void drawScoreboardValues(ScoreObjective objectiveIn, int y, String playerName, int startX, int endX, NetworkPlayerInfo playerInfo) {

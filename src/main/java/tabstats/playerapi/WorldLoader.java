@@ -7,17 +7,20 @@ import tabstats.TabStats;
 import tabstats.listener.GameOverlayListener;
 import tabstats.util.ChatColor;
 import tabstats.util.Handler;
+import tabstats.util.NickDetector;
 import net.minecraftforge.fml.common.eventhandler.SubscribeEvent;
 import net.minecraftforge.fml.common.gameevent.TickEvent;
 import net.minecraft.world.World;
 
 import java.util.ArrayList;
+import java.util.HashSet;
 import java.util.List;
+import java.util.Set;
 import java.util.UUID;
 import java.util.regex.Pattern;
 
 public class WorldLoader extends StatWorld {
-    Minecraft mc = Minecraft.getMinecraft();
+    private final Minecraft mc = Minecraft.getMinecraft();
     private World lastObservedWorld;
     private static final Pattern VALID_USERNAME = Pattern.compile("^[A-Za-z0-9_]{3,16}$");
 
@@ -59,13 +62,13 @@ public class WorldLoader extends StatWorld {
             
             // Create base HPlayer without stats
             HPlayer hPlayer = new HPlayer(playerUUID, playerName);
-            
+
             // Check skin hash for nick detection
             String skinHash = extractSkinHashFromEntity(entityPlayer);
-            boolean isDefinitelyNicked = tabstats.util.NickDetector.isPlayerNicked(playerUUID, skinHash);
-            
+            boolean isDefinitelyNicked = NickDetector.isPlayerNicked(playerUUID, skinHash);
+
             // Handle uncertain nick detection (Version 1 UUID but unknown skin hash)
-            if (!isDefinitelyNicked && tabstats.util.NickDetector.isNickedUuid(playerUUID) && skinHash == null) {
+            if (!isDefinitelyNicked && NickDetector.isNickedUuid(playerUUID) && skinHash == null) {
                 // Uncertain case - Version 1 UUID but skin not loaded yet, retry up to 200 ticks
                 int ticks = nickRetryTicks.merge(uuid, 1, (a, b) -> a + b);
                 if (ticks < 200) {
@@ -96,43 +99,48 @@ public class WorldLoader extends StatWorld {
             resetTabScroll();
         }
 
-        if (mc.theWorld != null && mc.thePlayer != null) {
-            for (EntityPlayer entityPlayer : mc.theWorld.playerEntities) {
-                final UUID uuid = entityPlayer.getUniqueID(); // Cache UUID once per player per tick
-                
-                if (!existedMoreThan5Seconds.contains(uuid)) {
-                    if (!this.timeCheck.containsKey(uuid))
-                        this.timeCheck.put(uuid, 0);
+        if (mc.theWorld == null || mc.thePlayer == null) {
+            return;
+        }
 
-                    int old = this.timeCheck.get(uuid);
-                    if (old > 100) {
-                        if (!this.existedMoreThan5Seconds.contains(uuid))
-                            this.existedMoreThan5Seconds.add(uuid);
-                    } else {
-                        this.timeCheck.put(uuid, old + 1);
+        for (EntityPlayer entityPlayer : mc.theWorld.playerEntities) {
+            UUID uuid = entityPlayer.getUniqueID();
+
+            if (!existedMoreThan5Seconds.contains(uuid)) {
+                timeCheck.putIfAbsent(uuid, 0);
+
+                int old = this.timeCheck.get(uuid);
+                if (old > 100) {
+                    if (!this.existedMoreThan5Seconds.contains(uuid)) {
+                        this.existedMoreThan5Seconds.add(uuid);
                     }
-                }
-                if (loadOrRender(entityPlayer)) {
-                    if (!this.getWorldPlayers().containsKey(uuid) && !this.statAssembly.contains(uuid)) {
-                        this.statAssembly.add(uuid);
-                        if (uuid.version() == 4 || uuid.version() == 2) {
-                            // Version 4 UUIDs (real players) and version 2 UUIDs (Hypixel lobby inserts) - fetch stats from API
-                            this.fetchStats(entityPlayer);
-                        } else if (uuid.version() == 1) {
-                            // Version 1 UUIDs (potentially nicked players) - check nick detection only, no API calls
-                            this.checkNickStatus(entityPlayer);
-                        }
-                        this.checkCacheSize();
-                    }
+                } else {
+                    this.timeCheck.put(uuid, old + 1);
                 }
             }
+
+            if (!loadOrRender(entityPlayer)) {
+                continue;
+            }
+
+            if (this.getWorldPlayers().containsKey(uuid) || this.statAssembly.contains(uuid)) {
+                continue;
+            }
+
+            this.statAssembly.add(uuid);
+            if (uuid.version() == 4 || uuid.version() == 2) {
+                this.fetchStats(entityPlayer);
+            } else if (uuid.version() == 1) {
+                this.checkNickStatus(entityPlayer);
+            }
+            this.checkCacheSize();
         }
     }
 
     public void checkCacheSize() {
         int max = 500;
         if (getWorldPlayers().size() > max) {
-            List<UUID> safePlayers = new ArrayList<>();
+            Set<UUID> safePlayers = new HashSet<>();
             for (EntityPlayer player : mc.theWorld.playerEntities) {
                 UUID uuid = player.getUniqueID();
                 if (this.existedMoreThan5Seconds.contains(uuid)) {
@@ -143,7 +151,7 @@ public class WorldLoader extends StatWorld {
             this.existedMoreThan5Seconds.clear();
             this.existedMoreThan5Seconds.addAll(safePlayers);
 
-            for (UUID playerUUID : this.getWorldPlayers().keySet()) {
+            for (UUID playerUUID : new ArrayList<>(this.getWorldPlayers().keySet())) {
                 if (!safePlayers.contains(playerUUID)) {
                     this.removePlayer(playerUUID);
                 }

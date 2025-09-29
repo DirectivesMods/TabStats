@@ -38,16 +38,17 @@ public class TabStatsGui extends GuiScreen {
         if (showingApiKey) {
             this.apiField.setText(actualApiKey);
         } else {
-            String masked = "";
             if (actualApiKey.length() <= 4) {
-                masked = actualApiKey;
-            } else {
-                for (int i = 0; i < actualApiKey.length() - 4; i++) {
-                    masked += "*";
-                }
-                masked += actualApiKey.substring(actualApiKey.length() - 4);
+                this.apiField.setText(actualApiKey);
+                return;
             }
-            this.apiField.setText(masked);
+
+            StringBuilder masked = new StringBuilder(actualApiKey.length());
+            for (int i = 0; i < actualApiKey.length() - 4; i++) {
+                masked.append('*');
+            }
+            masked.append(actualApiKey.substring(actualApiKey.length() - 4));
+            this.apiField.setText(masked.toString());
         }
     }
 

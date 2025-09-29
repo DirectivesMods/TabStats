@@ -6,7 +6,7 @@ import tabstats.playerapi.exception.*;
 import com.google.gson.JsonObject;
 import com.google.gson.JsonParser;
 import com.google.gson.JsonSyntaxException;
-import org.apache.commons.io.IOUtils;
+import org.apache.http.client.methods.CloseableHttpResponse;
 import org.apache.http.client.methods.HttpGet;
 import org.apache.http.impl.client.CloseableHttpClient;
 import org.apache.http.impl.client.HttpClients;
@@ -14,7 +14,6 @@ import org.apache.http.impl.client.HttpClients;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.InputStreamReader;
-import java.io.StringWriter;
 import java.nio.charset.StandardCharsets;
 
 public class HypixelAPI {
@@ -39,15 +38,16 @@ public class HypixelAPI {
             throw new InvalidKeyException();
         } else {
             String requestURL = String.format("https://api.hypixel.net/v2/player?key=%s&uuid=%s", apiKey, uuid.replace("-", ""));
-            try (CloseableHttpClient client = HttpClients.createDefault()) {
-                HttpGet request = new HttpGet(requestURL);
+            HttpGet request = new HttpGet(requestURL);
+            try (CloseableHttpClient client = HttpClients.createDefault();
+                 CloseableHttpResponse response = client.execute(request)) {
+                if (response.getEntity() == null) {
+                    return obj;
+                }
+
                 JsonParser parser = new JsonParser();
-
-                try {
-                    StringWriter writer = new StringWriter();
-                    IOUtils.copy(new InputStreamReader(client.execute(request).getEntity().getContent(), StandardCharsets.UTF_8), writer);
-
-                    obj = parser.parse(writer.toString()).getAsJsonObject();
+                try (InputStreamReader reader = new InputStreamReader(response.getEntity().getContent(), StandardCharsets.UTF_8)) {
+                    obj = parser.parse(reader).getAsJsonObject();
                 } catch (JsonSyntaxException ex) {
                     throw new BadJsonException();
                 }
@@ -95,11 +95,17 @@ public class HypixelAPI {
      */
     public static String getUUID(String name) {
         String uuid = "";
-        try (CloseableHttpClient client = HttpClients.createDefault()) {
-            HttpGet request = new HttpGet(String.format("https://api.mojang.com/users/profiles/minecraft/%s", name));
-            try (InputStream is = client.execute(request).getEntity().getContent()) {
+        HttpGet request = new HttpGet(String.format("https://api.mojang.com/users/profiles/minecraft/%s", name));
+        try (CloseableHttpClient client = HttpClients.createDefault();
+             CloseableHttpResponse response = client.execute(request)) {
+            if (response.getEntity() == null) {
+                return uuid;
+            }
+
+            try (InputStream is = response.getEntity().getContent();
+                 InputStreamReader reader = new InputStreamReader(is, StandardCharsets.UTF_8)) {
                 JsonParser jsonParser = new JsonParser();
-                JsonObject object = jsonParser.parse(new InputStreamReader(is, StandardCharsets.UTF_8)).getAsJsonObject();
+                JsonObject object = jsonParser.parse(reader).getAsJsonObject();
                 uuid = object.get("id").getAsString();
             } catch (NullPointerException ex) {
                 // Silently handle null pointer errors

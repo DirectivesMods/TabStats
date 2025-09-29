@@ -166,9 +166,7 @@ public class StatWorld {
             String displayComponent = entityPlayer.getDisplayName() != null ? entityPlayer.getDisplayName().getFormattedText() : null;
             HPlayer existing = getPlayerByIdentity(uuid, displayComponent, playerName);
             if (existing != null) {
-                this.addPlayer(uuid, existing);
-                this.removeFromStatAssembly(uuid);
-                nickRetryTicks.remove(uuid);
+                cachePlayer(uuid, existing);
                 registerAlias(existing, displayComponent);
                 return;
             }
@@ -212,18 +210,14 @@ public class StatWorld {
             if (apiSuccess) {
                 // API worked - player is definitely real, not nicked (API wouldn't return data for nicked players)
                 hPlayer.setNicked(false);
-                this.addPlayer(uuid, hPlayer);
-                this.removeFromStatAssembly(uuid);
-                nickRetryTicks.remove(uuid);
+                cachePlayer(uuid, hPlayer);
                 return;
             }
 
             if (isDefinitelyNicked) {
                 // Definitely nicked - display as nicked permanently, never check again
                 hPlayer.setNicked(true);
-                this.addPlayer(uuid, hPlayer);
-                this.removeFromStatAssembly(uuid);
-                nickRetryTicks.remove(uuid);
+                cachePlayer(uuid, hPlayer);
                 return;
             }
 
@@ -255,9 +249,7 @@ public class StatWorld {
                         // Max nick retries reached - uncertain status, treat as regular player with no stats
                         // This ensures players like "WHOAPERJIS" show only their name, not [NICKED]
                         hPlayer.setNicked(false);
-                        this.addPlayer(uuid, hPlayer);
-                        this.removeFromStatAssembly(uuid);
-                        nickRetryTicks.remove(uuid);
+                        cachePlayer(uuid, hPlayer);
                         return;
                     }
                 } else {
@@ -279,19 +271,16 @@ public class StatWorld {
                         // Max API retries reached for real UUID - treat as regular player with no stats
                         // This ensures new players show only their name, not as nicked
                         hPlayer.setNicked(false);
-                        this.addPlayer(uuid, hPlayer);
-                        this.removeFromStatAssembly(uuid);
+                        cachePlayer(uuid, hPlayer);
                         return;
                     }
                 }
             }
-            
+
             // 5. API succeeded - player is definitely real, not nicked
             // (API wouldn't return valid data for nicked players)
             hPlayer.setNicked(false);
-            this.addPlayer(uuid, hPlayer);
-            this.removeFromStatAssembly(uuid);
-            nickRetryTicks.remove(uuid);
+            cachePlayer(uuid, hPlayer);
         });
     }
 
@@ -351,5 +340,11 @@ public class StatWorld {
         }
 
         nameAliases.put(trimmed.toLowerCase(Locale.ROOT), player);
+    }
+
+    private void cachePlayer(UUID uuid, HPlayer player) {
+        this.addPlayer(uuid, player);
+        this.removeFromStatAssembly(uuid);
+        nickRetryTicks.remove(uuid);
     }
 }
