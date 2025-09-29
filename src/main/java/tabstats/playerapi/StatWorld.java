@@ -181,6 +181,7 @@ public class StatWorld {
             boolean apiSuccess = false;
             boolean isDefinitelyNicked = false;
             Exception apiException = null;
+            int uuidVersion = uuid.version();
             
             // 1. Fire API call immediately
             try {
@@ -216,7 +217,7 @@ public class StatWorld {
                 nickRetryTicks.remove(uuid);
                 return;
             }
-            
+
             if (isDefinitelyNicked) {
                 // Definitely nicked - display as nicked permanently, never check again
                 hPlayer.setNicked(true);
@@ -225,9 +226,15 @@ public class StatWorld {
                 nickRetryTicks.remove(uuid);
                 return;
             }
-            
+
             // 4. API failed - handle based on nick uncertainty
             if (!apiSuccess) {
+                if (uuidVersion == 2 && apiException instanceof PlayerNullException) {
+                    // Version 2 UUIDs with no API data are lobby bots/spoofs - leave in statAssembly so we don't re-fetch
+                    removeAliases(hPlayer);
+                    nickRetryTicks.remove(uuid);
+                    return;
+                }
                 // Don't retry on certain permanent failures
                 if (apiException instanceof InvalidKeyException) {
                     // Invalid API key - stop everything, don't waste calls

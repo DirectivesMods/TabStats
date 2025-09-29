@@ -37,9 +37,12 @@ import org.lwjgl.opengl.GL11;
 
 import java.util.Comparator;
 import java.util.List;
+import java.util.UUID;
+import java.util.regex.Pattern;
 
 public class StatsTab extends GuiPlayerTabOverlay {
     private static final Ordering<NetworkPlayerInfo> field_175252_a = Ordering.from(new StatsTab.PlayerComparator());
+    private static final Pattern VALID_USERNAME = Pattern.compile("^[A-Za-z0-9_]{3,16}$");
     private final Minecraft mc;
     private final GuiIngame guiIngame;
     private IChatComponent footer;
@@ -59,6 +62,7 @@ public class StatsTab extends GuiPlayerTabOverlay {
     private float targetScrollOffset = 0.0f;
     private int maxVisiblePlayers = 0;
     private final float scrollSpeed = 0.2f; // Animation smoothness factor
+    private int lastPlayerListSize = 0;
 
     public StatsTab(Minecraft mcIn, GuiIngame guiIngameIn) {
         super(mcIn, guiIngameIn);
@@ -103,17 +107,23 @@ public class StatsTab extends GuiPlayerTabOverlay {
      * @param playerListSize Total number of players in the list
      */
     public void handleMouseWheel(int wheelDelta, int playerListSize) {
-        if (maxVisiblePlayers >= playerListSize) {
+        if (maxVisiblePlayers <= 0) {
+            return;
+        }
+
+        int effectiveListSize = this.lastPlayerListSize > 0 ? this.lastPlayerListSize : Math.min(playerListSize, 80);
+
+        if (maxVisiblePlayers >= effectiveListSize) {
             // No need to scroll if all players fit on screen
             return;
         }
-        
+
         // Scroll by 1 player per wheel notch
         int scrollDirection = wheelDelta > 0 ? -1 : 1;
         targetScrollOffset += scrollDirection;
-        
-        // Clamp to valid bounds
-        float maxScroll = Math.max(0, playerListSize - maxVisiblePlayers);
+
+        // Clamp to valid bounds derived from the last rendered list size
+        float maxScroll = Math.max(0, effectiveListSize - maxVisiblePlayers);
         targetScrollOffset = MathHelper.clamp_float(targetScrollOffset, 0, maxScroll);
     }
     
@@ -145,12 +155,27 @@ public class StatsTab extends GuiPlayerTabOverlay {
         List<NetworkPlayerInfo> playerList = field_175252_a.sortedCopy(nethandler.getPlayerInfoMap());
         
         // Filter out version 3 UUIDs from the tab list completely
-        // Only show version 4 (definitely real players) and version 1 (potentially nicked players) and version 2 (potentially real players and some bots)
+        // Only show version 4 (definitely real players), version 2 (Hypixel lobby inserts) when verified, and version 1 (potentially nicked players)
         playerList.removeIf(playerInfo -> {
             if (playerInfo.getGameProfile().getId() == null) return true;
 
-            int uuidVersion = playerInfo.getGameProfile().getId().version();
-            return uuidVersion != 4 && uuidVersion != 1 && uuidVersion != 2;
+            UUID playerUuid = playerInfo.getGameProfile().getId();
+            int uuidVersion = playerUuid.version();
+            if (uuidVersion != 4 && uuidVersion != 1 && uuidVersion != 2) {
+                return true;
+            }
+
+            if (uuidVersion == 2 && statWorld.getPlayerByUUID(playerUuid) == null) {
+                return true;
+            }
+
+            String strippedName = ChatColor.stripColor(this.getPlayerName(playerInfo));
+            if (strippedName != null && strippedName.trim().startsWith("[NPC]")) {
+                return true;
+            }
+
+            String profileName = playerInfo.getGameProfile().getName();
+            return profileName == null || !VALID_USERNAME.matcher(profileName).matches();
         });
         
         /* width of the player's name */
@@ -191,13 +216,20 @@ public class StatsTab extends GuiPlayerTabOverlay {
         /* only grabs downwards of 80 players */
         playerList = playerList.subList(0, Math.min(playerList.size(), 80));
         int playerListSize = playerList.size();
-        
+        this.lastPlayerListSize = playerListSize;
+
         // Calculate maximum visible players based on screen height
         this.maxVisiblePlayers = calculateMaxVisiblePlayers(scaledRes, startingY);
-        
+
+        float maxScroll = Math.max(0, playerListSize - maxVisiblePlayers);
+        targetScrollOffset = MathHelper.clamp_float(targetScrollOffset, 0.0f, maxScroll);
+        if (scrollOffset < 0.0f) {
+            scrollOffset = 0.0f;
+        }
+
         // Update scroll animation
         updateScrollAnimation();
-        
+
         // Calculate visible player slice for rendering
         int startIndex = Math.max(0, Math.min((int) Math.floor(scrollOffset), playerListSize - maxVisiblePlayers));
         int endIndex = Math.min(playerListSize, startIndex + maxVisiblePlayers);
@@ -233,7 +265,8 @@ public class StatsTab extends GuiPlayerTabOverlay {
         int headerBottomY = ySpacer; // Save the Y position where content should start
         
         // Apply smooth scrolling offset to Y position
-        float smoothScrollPixels = (scrollOffset - startIndex) * (this.entryHeight + 1);
+        float fractionalOffset = MathHelper.clamp_float(scrollOffset - startIndex, 0.0f, 0.999f);
+        float smoothScrollPixels = fractionalOffset * (this.entryHeight + 1);
         ySpacer -= (int) smoothScrollPixels;
         
         // Enable scissor test to clip content above the stat title row

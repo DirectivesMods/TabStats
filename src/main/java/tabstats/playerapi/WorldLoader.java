@@ -2,8 +2,10 @@ package tabstats.playerapi;
 
 import net.minecraft.client.Minecraft;
 import net.minecraft.entity.player.EntityPlayer;
+import net.minecraft.util.IChatComponent;
 import tabstats.TabStats;
 import tabstats.listener.GameOverlayListener;
+import tabstats.util.ChatColor;
 import tabstats.util.Handler;
 import net.minecraftforge.fml.common.eventhandler.SubscribeEvent;
 import net.minecraftforge.fml.common.gameevent.TickEvent;
@@ -12,18 +14,36 @@ import net.minecraft.world.World;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.UUID;
+import java.util.regex.Pattern;
 
 public class WorldLoader extends StatWorld {
     Minecraft mc = Minecraft.getMinecraft();
     private World lastObservedWorld;
+    private static final Pattern VALID_USERNAME = Pattern.compile("^[A-Za-z0-9_]{3,16}$");
 
     public boolean loadOrRender(EntityPlayer player) {
         if (player == null) return false;
         
         UUID uuid = player.getUniqueID();
+        if (uuid == null) {
+            return false;
+        }
 
-        // Treat version 4 (real), version 2 (replay/offline/potential real player spoofed) and version 1 (potentially nicked) as valid players
-        // Version 3 UUIDs remain filtered out as they belong to NPCs like holograms
+        String baseName = player.getName();
+        if (baseName == null || !VALID_USERNAME.matcher(baseName).matches()) {
+            return false;
+        }
+
+        IChatComponent displayComponent = player.getDisplayName();
+        if (displayComponent != null) {
+            String stripped = ChatColor.stripColor(displayComponent.getFormattedText());
+            if (stripped != null && stripped.trim().startsWith("[NPC]")) {
+                return false;
+            }
+        }
+
+        // Treat version 4 (real), version 2 (replay/offline/potential lobby inserts) and version 1 (potentially nicked) as valid players
+        // Version 3 UUIDs remain filtered out as they belong to holograms and NPCs
         int version = uuid.version();
         return version == 4 || version == 2 || version == 1;
     }
@@ -96,7 +116,7 @@ public class WorldLoader extends StatWorld {
                     if (!this.getWorldPlayers().containsKey(uuid) && !this.statAssembly.contains(uuid)) {
                         this.statAssembly.add(uuid);
                         if (uuid.version() == 4 || uuid.version() == 2) {
-                            // Version 4 UUIDs (real players) and version 2 UUIDs (replay/offline) - fetch stats from API
+                            // Version 4 UUIDs (real players) and version 2 UUIDs (Hypixel lobby inserts) - fetch stats from API
                             this.fetchStats(entityPlayer);
                         } else if (uuid.version() == 1) {
                             // Version 1 UUIDs (potentially nicked players) - check nick detection only, no API calls
