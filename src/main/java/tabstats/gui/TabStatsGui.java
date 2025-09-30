@@ -5,13 +5,11 @@ import tabstats.util.ChatColor;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.GuiButton;
 import net.minecraft.client.gui.GuiScreen;
-import net.minecraft.client.gui.GuiTextField;
 import net.minecraft.util.ChatComponentText;
 import java.io.IOException;
 
 public class TabStatsGui extends GuiScreen {
-    private GuiTextField apiField;
-    private String actualApiKey = "";
+    private MaskedGuiTextField apiField;
     private boolean showingApiKey = false;
 
     @Override
@@ -21,55 +19,45 @@ public class TabStatsGui extends GuiScreen {
         int centerX = this.width / 2;
         int y = this.height / 2 - 20;
 
-        this.apiField = new GuiTextField(3, this.fontRendererObj, centerX - 110, y - 24, 220, 20);
+        int fieldPadding = 10;
+        int desiredWidth = this.fontRendererObj.getStringWidth("WWWWWWWW-WWWW-WWWW-WWWW-WWWWWWWWWWWW") + fieldPadding;
+        int fieldWidth = Math.max(220, desiredWidth);
+        int fieldX = centerX - fieldWidth / 2;
+
+        this.apiField = new MaskedGuiTextField(3, this.fontRendererObj, fieldX, y - 24, fieldWidth, 20);
         this.apiField.setMaxStringLength(50);
         String current = ModConfig.getInstance().getApiKey();
-        this.actualApiKey = current == null ? "" : current;
+        this.apiField.setText(current == null ? "" : current);
         this.showingApiKey = false;
-        updateFieldDisplay();
+        this.apiField.setRevealing(this.showingApiKey);
 
-        this.buttonList.add(new GuiButton(4, centerX + 120, y - 24, 40, 20, "Show"));
+        int showButtonX = fieldX + fieldWidth + 10;
+        this.buttonList.add(new GuiButton(4, showButtonX, y - 24, 40, 20, "Show"));
         this.buttonList.add(new GuiButton(0, centerX - 100, y + 8, 60, 20, "Save"));
         this.buttonList.add(new GuiButton(1, centerX - 30, y + 8, 60, 20, "Clear"));
         this.buttonList.add(new GuiButton(2, centerX + 40, y + 8, 60, 20, "Close"));
-    }
-
-    private void updateFieldDisplay() {
-        if (showingApiKey) {
-            this.apiField.setText(actualApiKey);
-        } else {
-            if (actualApiKey.length() <= 4) {
-                this.apiField.setText(actualApiKey);
-                return;
-            }
-
-            StringBuilder masked = new StringBuilder(actualApiKey.length());
-            for (int i = 0; i < actualApiKey.length() - 4; i++) {
-                masked.append('*');
-            }
-            masked.append(actualApiKey.substring(actualApiKey.length() - 4));
-            this.apiField.setText(masked.toString());
-        }
     }
 
     @Override
     protected void actionPerformed(GuiButton button) {
         ModConfig cfg = ModConfig.getInstance();
         if (button.id == 0) {
-            String key = this.actualApiKey.trim();
+            String key = this.apiField.getText().trim();
             String currentKey = cfg.getApiKey();
             // Only update and refresh if the key actually changed
             if (!key.equals(currentKey == null ? "" : currentKey)) {
                 cfg.setApiKey(key);
                 cfg.save();
+                this.apiField.setText(key);
+                this.apiField.setRevealing(this.showingApiKey);
                 try {
                     tabstats.TabStats.getTabStats().getStatWorld().recheckAllPlayers();
                 } catch (Exception ignored) {
                     // Silent fail - don't spam console
                 }
-                Minecraft.getMinecraft().thePlayer.addChatMessage(new ChatComponentText(ChatColor.GREEN + "TabStats API key updated!"));
+                Minecraft.getMinecraft().thePlayer.addChatMessage(new ChatComponentText(ChatColor.GREEN + "[TabStats] " + ChatColor.WHITE + "API key updated."));
             } else {
-                Minecraft.getMinecraft().thePlayer.addChatMessage(new ChatComponentText(ChatColor.YELLOW + "API key unchanged."));
+                Minecraft.getMinecraft().thePlayer.addChatMessage(new ChatComponentText(ChatColor.GREEN + "[TabStats] " + ChatColor.WHITE + "API key unchanged."));
             }
         } else if (button.id == 1) {
             String currentKey = cfg.getApiKey();
@@ -77,23 +65,23 @@ public class TabStatsGui extends GuiScreen {
             if (currentKey != null && !currentKey.trim().isEmpty()) {
                 cfg.setApiKey("");
                 cfg.save();
-                this.actualApiKey = "";
-                updateFieldDisplay();
+                this.apiField.setText("");
+                this.apiField.setRevealing(this.showingApiKey);
                 try {
                     tabstats.TabStats.getTabStats().getStatWorld().recheckAllPlayers();
                 } catch (Exception ignored) {
                     // Silent fail - don't spam console
                 }
-                Minecraft.getMinecraft().thePlayer.addChatMessage(new ChatComponentText(ChatColor.GREEN + "TabStats API key cleared."));
+                Minecraft.getMinecraft().thePlayer.addChatMessage(new ChatComponentText(ChatColor.GREEN + "[TabStats] " + ChatColor.WHITE + "API key cleared."));
             } else {
-                Minecraft.getMinecraft().thePlayer.addChatMessage(new ChatComponentText(ChatColor.YELLOW + "API key is already empty."));
+                Minecraft.getMinecraft().thePlayer.addChatMessage(new ChatComponentText(ChatColor.GREEN + "[TabStats] " + ChatColor.WHITE + "API key is already empty."));
             }
         } else if (button.id == 2) {
             Minecraft.getMinecraft().displayGuiScreen(null);
         } else if (button.id == 4) {
             this.showingApiKey = !this.showingApiKey;
             button.displayString = this.showingApiKey ? "Hide" : "Show";
-            updateFieldDisplay();
+            this.apiField.setRevealing(this.showingApiKey);
         }
     }
 
@@ -103,129 +91,8 @@ public class TabStatsGui extends GuiScreen {
             Minecraft.getMinecraft().displayGuiScreen(null);
             return;
         }
-        
-        if (this.apiField.isFocused()) {
-            boolean isModifierPressed = org.lwjgl.input.Keyboard.isKeyDown(org.lwjgl.input.Keyboard.KEY_LCONTROL) || 
-                org.lwjgl.input.Keyboard.isKeyDown(org.lwjgl.input.Keyboard.KEY_RCONTROL) ||
-                org.lwjgl.input.Keyboard.isKeyDown(org.lwjgl.input.Keyboard.KEY_LMETA) ||
-                org.lwjgl.input.Keyboard.isKeyDown(org.lwjgl.input.Keyboard.KEY_RMETA);
-            
-            if (keyCode == 203) {
-                if (isModifierPressed) {
-                    this.apiField.setCursorPositionZero();
-                } else {
-                    int currentPos = this.apiField.getCursorPosition();
-                    if (currentPos > 0) {
-                        this.apiField.setCursorPosition(currentPos - 1);
-                    }
-                }
-                return;
-            } else if (keyCode == 205) {
-                if (isModifierPressed) {
-                    this.apiField.setCursorPosition(this.apiField.getText().length());
-                } else {
-                    int currentPos = this.apiField.getCursorPosition();
-                    int maxPos = this.apiField.getText().length();
-                    if (currentPos < maxPos) {
-                        this.apiField.setCursorPosition(currentPos + 1);
-                    }
-                }
-                return;
-            } else if (keyCode == 199) {
-                this.apiField.setCursorPositionZero();
-                return;
-            } else if (keyCode == 207) {
-                this.apiField.setCursorPosition(this.apiField.getText().length());
-                return;
-            }
-            
-            boolean isPaste = false;
-            boolean isCopy = false;
-            boolean isSelectAll = false;
-            boolean isCtrlBackspace = false;
-                
-            if (isModifierPressed) {
-                if (keyCode == org.lwjgl.input.Keyboard.KEY_V) {
-                    isPaste = true;
-                } else if (keyCode == org.lwjgl.input.Keyboard.KEY_C) {
-                    isCopy = true;
-                } else if (keyCode == org.lwjgl.input.Keyboard.KEY_A) {
-                    isSelectAll = true;
-                } else if (keyCode == 14) { // Ctrl+Backspace
-                    isCtrlBackspace = true;
-                }
-            }
-            
-            if (isPaste) {
-                try {
-                    String clipboard = java.awt.Toolkit.getDefaultToolkit().getSystemClipboard()
-                        .getData(java.awt.datatransfer.DataFlavor.stringFlavor).toString();
-                    if (clipboard != null && clipboard.length() <= 50) {
-                        actualApiKey = clipboard;
-                        updateFieldDisplay();
-                    }
-                } catch (Exception ignored) {
-                    // Silent fail on clipboard access
-                }
-            } else if (isCopy) {
-                try {
-                    java.awt.datatransfer.StringSelection selection = new java.awt.datatransfer.StringSelection(actualApiKey);
-                    java.awt.Toolkit.getDefaultToolkit().getSystemClipboard().setContents(selection, null);
-                } catch (Exception ignored) {
-                    // Silent fail on clipboard access
-                }
-            } else if (isSelectAll) {
-                this.apiField.setCursorPositionZero();
-                this.apiField.setSelectionPos(this.apiField.getText().length());
-            } else if (isCtrlBackspace) {
-                int cursorPos = this.apiField.getCursorPosition();
-                int displayTextLength = this.apiField.getText().length();
-                int actualTextLength = actualApiKey.length();
-                
-                if (actualTextLength > 0 && cursorPos > 0) {
-                    int actualCursorPos;
-                    if (showingApiKey) {
-                        actualCursorPos = Math.min(cursorPos, actualTextLength);
-                    } else {
-                        if (cursorPos >= displayTextLength) {
-                            actualCursorPos = actualTextLength;
-                        } else {
-                            actualCursorPos = Math.min(cursorPos, actualTextLength);
-                        }
-                    }
-                    
-                    if (actualCursorPos > 0) {
-                        actualApiKey = actualApiKey.substring(actualCursorPos);
-                        updateFieldDisplay();
-                        this.apiField.setCursorPositionZero();
-                    }
-                }
-            } else if (keyCode == 14) {
-                if (this.apiField.getSelectedText() != null && !this.apiField.getSelectedText().isEmpty()) {
-                    actualApiKey = "";
-                    updateFieldDisplay();
-                } else if (actualApiKey.length() > 0) {
-                    actualApiKey = actualApiKey.substring(0, actualApiKey.length() - 1);
-                    updateFieldDisplay();
-                }
-            } else if (keyCode == 211) {
-                if (this.apiField.getSelectedText() != null && !this.apiField.getSelectedText().isEmpty()) {
-                    actualApiKey = "";
-                    updateFieldDisplay();
-                } else {
-                    actualApiKey = "";
-                    updateFieldDisplay();
-                }
-            } else if (typedChar >= 32 && typedChar < 127) {
-                if (this.apiField.getSelectedText() != null && !this.apiField.getSelectedText().isEmpty()) {
-                    actualApiKey = String.valueOf(typedChar);
-                } else if (actualApiKey.length() < 50) {
-                    actualApiKey += typedChar;
-                }
-                updateFieldDisplay();
-            }
-        } else {
-            this.apiField.textboxKeyTyped(typedChar, keyCode);
+        if (this.apiField.textboxKeyTyped(typedChar, keyCode)) {
+            return;
         }
         super.keyTyped(typedChar, keyCode);
     }
@@ -240,7 +107,7 @@ public class TabStatsGui extends GuiScreen {
     public void drawScreen(int mouseX, int mouseY, float partialTicks) {
         this.drawDefaultBackground();
         drawCenteredString(this.fontRendererObj, "TabStats — API Key", this.width / 2, this.height / 2 - 60, 0xFFFFFF);
-        drawString(this.fontRendererObj, "Enter your Hypixel API key below:", this.width / 2 - 110, this.height / 2 - 45, 0xAAAAAA);
+        drawString(this.fontRendererObj, "Enter your Hypixel API key below:", this.apiField.xPosition, this.height / 2 - 45, 0xAAAAAA);
         this.apiField.drawTextBox();
         super.drawScreen(mouseX, mouseY, partialTicks);
     }
