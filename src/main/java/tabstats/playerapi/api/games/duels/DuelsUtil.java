@@ -104,35 +104,45 @@ public abstract class DuelsUtil extends HGameBase {
                 }
             }
 
-            DuelsModes duelMode = DuelsModes.valueOf(modeName.toUpperCase());
-            String gamemodeName = duelMode.getName();
+            try {
+                DuelsModes duelMode = DuelsModes.valueOf(modeName.toUpperCase(Locale.ROOT));
+                String gamemodeName = duelMode.getName();
 
-            /* calculate wins */
-            int gamemodeWins = duels.duelJson.get(duelMode.getWinsJson()).getAsInt();
-            int multiplier = title.toLowerCase().contains("all modes") ? 2 : 1;
+                // Safely pull wins json; if absent, fall back to formatted title
+                int gamemodeWins = 0;
+                try {
+                    if (duels.duelJson != null && duels.duelJson.has(duelMode.getWinsJson()) && !duels.duelJson.get(duelMode.getWinsJson()).isJsonNull()) {
+                        gamemodeWins = duels.duelJson.get(duelMode.getWinsJson()).getAsInt();
+                    }
+                } catch (Exception ignored) { gamemodeWins = 0; }
 
-            if (gamemodeWins >= 100000 * multiplier) {
-                return ChatColor.GOLD + gamemodeName + " World's Best";
-            } else if (gamemodeWins >= 50000 * multiplier) {
-                return ChatColor.LIGHT_PURPLE + gamemodeName + " World Master";
-            } else if (gamemodeWins >= 25000 * multiplier) {
-                return ChatColor.AQUA + gamemodeName + " World Elite";
-            } else if (gamemodeWins >= 10000 * multiplier) {
-                return ChatColor.DARK_PURPLE + ChatColor.BOLD.toString() + gamemodeName + " Godlike";
-            } else if (gamemodeWins >= 5000 * multiplier) {
-                return ChatColor.YELLOW + ChatColor.BOLD.toString() + gamemodeName + " Grandmaster";
-            } else if (gamemodeWins >= 2000 * multiplier) {
-                return ChatColor.DARK_RED + ChatColor.BOLD.toString() + gamemodeName + " Legend";
-            } else if (gamemodeWins >= 1000 * multiplier) {
-                return ChatColor.DARK_GREEN + gamemodeName + " Master";
-            } else if (gamemodeWins >= 500 * multiplier) {
-                return ChatColor.DARK_AQUA + gamemodeName + " Diamond";
-            } else if (gamemodeWins >= 250 * multiplier) {
-                return ChatColor.GOLD + gamemodeName + " Gold";
-            } else if (gamemodeWins >= 100 * multiplier) {
-                return ChatColor.WHITE + gamemodeName + " Iron";
-            } else if (gamemodeWins >= 50 * multiplier) {
-                return ChatColor.GRAY + gamemodeName + " Rookie";
+                int multiplier = title.toLowerCase(Locale.ROOT).contains("all modes") ? 2 : 1;
+
+                if (gamemodeWins >= 100000 * multiplier) {
+                    return ChatColor.GOLD + gamemodeName + " World's Best";
+                } else if (gamemodeWins >= 50000 * multiplier) {
+                    return ChatColor.LIGHT_PURPLE + gamemodeName + " World Master";
+                } else if (gamemodeWins >= 25000 * multiplier) {
+                    return ChatColor.AQUA + gamemodeName + " World Elite";
+                } else if (gamemodeWins >= 10000 * multiplier) {
+                    return ChatColor.DARK_PURPLE + ChatColor.BOLD.toString() + gamemodeName + " Godlike";
+                } else if (gamemodeWins >= 5000 * multiplier) {
+                    return ChatColor.YELLOW + ChatColor.BOLD.toString() + gamemodeName + " Grandmaster";
+                } else if (gamemodeWins >= 2000 * multiplier) {
+                    return ChatColor.DARK_RED + ChatColor.BOLD.toString() + gamemodeName + " Legend";
+                } else if (gamemodeWins >= 1000 * multiplier) {
+                    return ChatColor.DARK_GREEN + gamemodeName + " Master";
+                } else if (gamemodeWins >= 500 * multiplier) {
+                    return ChatColor.DARK_AQUA + gamemodeName + " Diamond";
+                } else if (gamemodeWins >= 250 * multiplier) {
+                    return ChatColor.GOLD + gamemodeName + " Gold";
+                } else if (gamemodeWins >= 100 * multiplier) {
+                    return ChatColor.WHITE + gamemodeName + " Iron";
+                } else if (gamemodeWins >= 50 * multiplier) {
+                    return ChatColor.GRAY + gamemodeName + " Rookie";
+                }
+            } catch (Throwable ignored) {
+                // Any failure (missing enum constant due to new Hypixel mode, classload issue, bad json) falls back to raw formatted title.
             }
         }
 
