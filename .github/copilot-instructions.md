@@ -17,26 +17,21 @@ TabStats is a Forge 1.8.9 client-only mod that overlays Hypixel stats inside the
 ## Player Lifecycle & UUID Rules
 - `WorldLoader.loadOrRender(EntityPlayer)` rejects players with null UUIDs, invalid names, `[NPC]` prefixes, or UUID version 3 (holograms/NPCs).
 - Accepted UUID versions:
-  - **v4**: Real players → queue `fetchStats()` (API + nick detection).
+  - **v4**: Real players → queue `fetchStats()` (Hypixel API stats fetch).
   - **v2**: Hypixel lobby/replay inserts → also queue `fetchStats()` once. If the API returns `PlayerNullException`, treat as a lobby bot and do not keep retrying.
-  - **v1**: Potentially nicked players → skip API calls; run `checkNickStatus()` (skin-hash nick detection with up to 200 tick retries while the skin loads).
+  - **v1**: Nicked players (as of Oct 2025 every v1 UUID on Hypixel is a nick) → skip API calls; mark nicked immediately via `checkNickStatus()`.
 - `WorldLoader` uses `statAssembly` to ensure only one outstanding task per player and calls `checkCacheSize()` to evict players once cache exceeds ~500 entries.
 - On world changes or teardown (`onDelete`) it clears caches and calls `StatsTab.resetScroll()` so the overlay snaps back to the top.
 
 ## Stat Fetching & Nick Detection
 - `StatWorld.fetchStatsWithRetry()` always runs inside `Handler.asExecutor()`.
-- A single pass constructs `HPlayer`, registers aliases for raw usernames and formatted scoreboard names, and fires:
-  - Hypixel API call (`HypixelAPI#getWholeObject`) to populate `Bedwars`, `Duels`, and `Skywars` objects.
-  - Nick detection (`NickDetector.isPlayerNicked(uuid, skinHash)`).
-- Success cases:
-  - API success → player is real; cache stats, mark `nicked=false`.
-  - Nick detection certainty with no API data → cache player with `nicked=true`.
+- A single pass constructs `HPlayer`, registers aliases for raw usernames and formatted scoreboard names, and fires a Hypixel API call (`HypixelAPI#getWholeObject`) to populate `Bedwars`, `Duels`, and `Skywars` objects for UUID versions 2 and 4 only.
+- UUID v1 players skip the API completely and are cached instantly with `nicked=true`.
 - Failure handling:
   - `InvalidKeyException` aborts immediately (no retries).
   - v2 UUID + `PlayerNullException` → treat as lobby insert, drop aliases, leave unseen in the overlay.
-  - Potential nick (v1 UUID + nick signature without skin yet) → rely on `nickRetryTicks` (≤200) and retry `checkNickStatus()` only.
-  - Real UUID (v4) with transient API errors → exponential backoff (0ms, 250ms, 500ms … up to 8 attempts). After the cap, cache name-only data with `nicked=false`.
-- `removePlayer()` and `clearPlayers()` always purge aliases, retry counters, and timers to prevent memory leaks.
+  - v4 UUID transient API errors → exponential backoff (0ms, 250ms, 500ms … up to 8 attempts). After the cap, cache name-only data with `nicked=false`.
+- `removePlayer()` and `clearPlayers()` always purge aliases and timers to prevent memory leaks.
 
 ## Tab Rendering Essentials (`render/StatsTab.java`)
 - Player list derives from `NetHandlerPlayClient#getPlayerInfoMap()` sorted by team/game type. Filtering removes:
@@ -64,7 +59,7 @@ TabStats is a Forge 1.8.9 client-only mod that overlays Hypixel stats inside the
 - Add a game mode: extend `HypixelGames`, implement util/ratio helpers, wire into `HPlayer.addGames()` + `StatWorld.fetchStats()` serialization.
 - Rendering tweak: `render/StatsTab.java` (honor scroll math, stat alignment, UUID filtering, and arrow indicators).
 - Player flow/data changes: `playerapi/{WorldLoader,StatWorld,HPlayer}.java` (respect executor usage, retry limits, cache semantics, alias handling).
-- Performance changes: audit `Handler.asExecutor()` usage, ensure UUID caching isn’t regressed, keep memory cleanup cases (`removePlayer`, nick retry maps).
+- Performance changes: audit `Handler.asExecutor()` usage, ensure UUID caching isn’t regressed, keep memory cleanup cases (`removePlayer`).
 
 ## When in Doubt
 - Unsure about API flow, tab layout, cache invalidation, or UUID filtering? Ask and we’ll extend this guide.

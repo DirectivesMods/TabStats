@@ -3,7 +3,6 @@ package tabstats.playerapi;
 import tabstats.playerapi.api.games.HGameBase;
 import tabstats.playerapi.api.stats.Stat;
 import tabstats.util.ChatColor;
-import tabstats.util.NickDetector;
 import com.google.gson.JsonObject;
 
 import java.util.ArrayList;

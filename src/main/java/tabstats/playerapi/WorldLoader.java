@@ -52,40 +52,16 @@ public class WorldLoader extends StatWorld {
     }
 
     /**
-     * Check nick status for version 1 UUIDs without making API calls
+     * Handle version 1 UUIDs: they are always nicked. No skin hash or retry logic required.
      */
     private void checkNickStatus(EntityPlayer entityPlayer) {
         Handler.asExecutor(() -> {
             UUID uuid = entityPlayer.getUniqueID();
-            String playerUUID = uuid.toString();
             String playerName = entityPlayer.getName();
-            
-            // Create base HPlayer without stats
-            HPlayer hPlayer = new HPlayer(playerUUID, playerName);
-
-            // Check skin hash for nick detection
-            String skinHash = extractSkinHashFromEntity(entityPlayer);
-            boolean isDefinitelyNicked = NickDetector.isPlayerNicked(playerUUID, skinHash);
-
-            // Handle uncertain nick detection (Version 1 UUID but unknown skin hash)
-            if (!isDefinitelyNicked && NickDetector.isNickedUuid(playerUUID) && skinHash == null) {
-                // Uncertain case - Version 1 UUID but skin not loaded yet, retry up to 200 ticks
-                int ticks = nickRetryTicks.merge(uuid, 1, (a, b) -> a + b);
-                if (ticks < 200) {
-                    // Remove from stat assembly to allow retry on next tick
-                    this.removeFromStatAssembly(uuid);
-                    return;
-                } else {
-                    // Max retries reached - treat as uncertain, show name only (not nicked)
-                    nickRetryTicks.remove(uuid);
-                }
-            }
-            
-            // Set nick status and add to world
-            hPlayer.setNicked(isDefinitelyNicked);
+            HPlayer hPlayer = new HPlayer(uuid.toString(), playerName);
+            hPlayer.setNicked(true);
             this.addPlayer(uuid, hPlayer);
             this.removeFromStatAssembly(uuid);
-            nickRetryTicks.remove(uuid); // Clear retry counter on success
         });
     }
 

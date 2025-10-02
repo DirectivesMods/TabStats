@@ -11,9 +11,6 @@ import tabstats.playerapi.exception.PlayerNullException;
 import tabstats.util.ChatColor;
 import tabstats.util.Handler;
 import tabstats.util.NickDetector;
-import com.mojang.authlib.GameProfile;
-import com.mojang.authlib.properties.Property;
-import java.util.Base64;
 import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
 import com.google.gson.JsonParser;
@@ -28,8 +25,6 @@ public class StatWorld {
     protected final List<UUID> statAssembly = new ArrayList<>();
     protected final List<UUID> existedMoreThan5Seconds = new ArrayList<>();
     protected final Map<UUID, Integer> timeCheck = new HashMap<>();
-    // Track retries for nick detection similar to script waiting up to ~200 ticks when name has no color
-    protected final Map<UUID, Integer> nickRetryTicks = new HashMap<>();
 
     public StatWorld() {
         worldPlayers = new ConcurrentHashMap<>();
@@ -39,7 +34,6 @@ public class StatWorld {
     public void removePlayer(UUID playerUUID) {
         HPlayer removed = worldPlayers.remove(playerUUID);
         // Clean up tracking maps to prevent memory leaks
-        nickRetryTicks.remove(playerUUID);
         timeCheck.remove(playerUUID);
         statAssembly.remove(playerUUID);
         existedMoreThan5Seconds.remove(playerUUID);
@@ -54,7 +48,6 @@ public class StatWorld {
     public void clearPlayers() {
         worldPlayers.clear();
         // Clear all tracking maps to prevent memory leaks
-        nickRetryTicks.clear();
         timeCheck.clear();
         statAssembly.clear();
         existedMoreThan5Seconds.clear();
@@ -69,9 +62,6 @@ public class StatWorld {
         // Clear tracking to allow fresh processing but preserve cached players
         timeCheck.clear();
         statAssembly.clear();
-        
-        // Reset nick retry counters to allow fresh attempts during refresh
-        nickRetryTicks.clear();
         
         // Preserve existence tracking for cached players to avoid 5-second delays
         Set<UUID> preservedUUIDs = new HashSet<>(worldPlayers.keySet());
@@ -100,7 +90,6 @@ public class StatWorld {
         statAssembly.remove(uuid);
         existedMoreThan5Seconds.remove(uuid);
         timeCheck.remove(uuid);
-        nickRetryTicks.remove(uuid);
         removeAliases(removed);
     }
 
@@ -177,7 +166,6 @@ public class StatWorld {
 
             // Fire both API call AND nick detection simultaneously for speed
             boolean apiSuccess = false;
-            boolean isDefinitelyNicked = false;
             Exception apiException = null;
             int uuidVersion = uuid.version();
             
@@ -202,9 +190,8 @@ public class StatWorld {
                 apiException = ex;
             }
             
-            // 2. Fire nick detection immediately (parallel to API)
-            String skinHash = extractSkinHashFromEntity(entityPlayer);
-            isDefinitelyNicked = NickDetector.isPlayerNicked(playerUUID, skinHash);
+            // 2. Determine nick status purely from UUID version (v1 = nicked)
+            boolean isNicked = NickDetector.isNickedUuid(playerUUID);
 
             // 3. Handle results based on what we got
             if (apiSuccess) {
@@ -213,9 +200,9 @@ public class StatWorld {
                 cachePlayer(uuid, hPlayer);
                 return;
             }
-
-            if (isDefinitelyNicked) {
-                // Definitely nicked - display as nicked permanently, never check again
+            
+            if (isNicked) {
+                // Nicked player (UUID v1) - no API data expected, mark as nicked and cache
                 hPlayer.setNicked(true);
                 cachePlayer(uuid, hPlayer);
                 return;
@@ -226,7 +213,6 @@ public class StatWorld {
                 if (uuidVersion == 2 && apiException instanceof PlayerNullException) {
                     // Version 2 UUIDs with no API data are lobby bots/spoofs - leave in statAssembly so we don't re-fetch
                     removeAliases(hPlayer);
-                    nickRetryTicks.remove(uuid);
                     return;
                 }
                 // Don't retry on certain permanent failures
@@ -236,44 +222,25 @@ public class StatWorld {
                     return;
                 }
                 
-                // If UUID suggests possible nick but we're uncertain about skin, use nick retry system
-                if (NickDetector.isNickedUuid(playerUUID)) {
-                    // Uncertain about nick status - retry nick detection only (no API calls are made)
-                    int ticks = nickRetryTicks.merge(uuid, 1, (a, b) -> a + b);
-                    if (ticks < 200) {
-                        // Retry nick detection only - don't retry API calls for nicked players
-                        this.removeFromStatAssembly(uuid);
-                        // Will be retried on next tick via WorldLoader.onTick -> checkNickStatus
-                        return;
-                    } else {
-                        // Max nick retries reached - uncertain status, treat as regular player with no stats
-                        // This ensures players like "WHOAPERJIS" show only their name, not [NICKED]
-                        hPlayer.setNicked(false);
-                        cachePlayer(uuid, hPlayer);
-                        return;
-                    }
+                // Real UUID (v4 or v2) but API failed - use exponential backoff for API issues
+                if (apiRetryAttempt < 8) { // 0-7 = 8 attempts total
+                    long delayMs = apiRetryAttempt == 0 ? 0 : Math.round(250 * Math.pow(2, apiRetryAttempt - 1));
+
+                    // Schedule retry with exponential backoff
+                    Handler.asExecutor(() -> {
+                        try {
+                            Thread.sleep(delayMs);
+                            fetchStatsWithRetry(entityPlayer, apiRetryAttempt + 1);
+                        } catch (InterruptedException e) {
+                            Thread.currentThread().interrupt();
+                        }
+                    });
+                    return;
                 } else {
-                    // Real UUID (v4) but API failed - use exponential backoff for API issues
-                    if (apiRetryAttempt < 8) { // 0-7 = 8 attempts total
-                        long delayMs = apiRetryAttempt == 0 ? 0 : Math.round(250 * Math.pow(2, apiRetryAttempt - 1));
-                        
-                        // Schedule retry with exponential backoff
-                        Handler.asExecutor(() -> {
-                            try {
-                                Thread.sleep(delayMs);
-                                fetchStatsWithRetry(entityPlayer, apiRetryAttempt + 1);
-                            } catch (InterruptedException e) {
-                                Thread.currentThread().interrupt();
-                            }
-                        });
-                        return;
-                    } else {
-                        // Max API retries reached for real UUID - treat as regular player with no stats
-                        // This ensures new players show only their name, not as nicked
-                        hPlayer.setNicked(false);
-                        cachePlayer(uuid, hPlayer);
-                        return;
-                    }
+                    // Max API retries reached for real UUID - treat as regular player with no stats
+                    hPlayer.setNicked(false);
+                    cachePlayer(uuid, hPlayer);
+                    return;
                 }
             }
 
@@ -284,24 +251,7 @@ public class StatWorld {
         });
     }
 
-    protected String extractSkinHashFromEntity(EntityPlayer entityPlayer) {
-        try {
-            GameProfile profile = entityPlayer.getGameProfile();
-            Property textures = profile.getProperties().get("textures").stream().findFirst().orElse(null);
-            if (textures == null) return null;
-            String json = new String(Base64.getDecoder().decode(textures.getValue()), "UTF-8");
-            JsonObject root = new JsonParser().parse(json).getAsJsonObject();
-            if (!root.has("textures")) return null;
-            JsonObject texturesObj = root.getAsJsonObject("textures");
-            if (!texturesObj.has("SKIN")) return null;
-            JsonObject skinObj = texturesObj.getAsJsonObject("SKIN");
-            if (!skinObj.has("url")) return null;
-            String url = skinObj.get("url").getAsString();
-            return NickDetector.extractSkinHash(url);
-        } catch (Exception ignored) {
-            return null;
-        }
-    }
+    // Skin hash extraction removed – no longer needed for nick detection
 
     private void registerAlias(HPlayer player, String name) {
         if (player == null || name == null) {
@@ -345,6 +295,5 @@ public class StatWorld {
     private void cachePlayer(UUID uuid, HPlayer player) {
         this.addPlayer(uuid, player);
         this.removeFromStatAssembly(uuid);
-        nickRetryTicks.remove(uuid);
     }
 }
