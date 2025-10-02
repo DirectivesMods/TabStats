@@ -1,9 +1,8 @@
 package tabstats.util;
 
 /**
- * Simplified nick detection: as of Oct 2025 every UUID v1 on Hypixel represents a nicked player.
- * We therefore only need to test the UUID version nibble. All previous skin-hash based heuristics
- * have been removed to save memory and CPU.
+ * Nick detection: as of Oct 2025 every UUID v1 on Hypixel is a nicked player.
+ * Only the UUID version nibble is inspected.
  */
 public class NickDetector {
 

@@ -94,10 +94,7 @@ public class HPlayer {
 
     public void setNicked(boolean nicked) { this.nicked = nicked; }
 
-    public boolean isNicked() { 
-        // Use the precomputed nick flag set during player processing (UUID v1 + known skin)
-        return this.nicked;
-    }
+    public boolean isNicked() { return this.nicked; }
 
     public void setPlayerRank(String playerRank) {
         this.playerRank = playerRank;

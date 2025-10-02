@@ -45,15 +45,12 @@ public class WorldLoader extends StatWorld {
             }
         }
 
-        // Treat version 4 (real), version 2 (replay/offline/potential lobby inserts) and version 1 (potentially nicked) as valid players
-        // Version 3 UUIDs remain filtered out as they belong to holograms and NPCs
+    // Allow only UUID versions we care about: 4 (real), 2 (lobby/replay), 1 (nicked). Version 3 = holograms/NPCs.
         int version = uuid.version();
         return version == 4 || version == 2 || version == 1;
     }
 
-    /**
-     * Handle version 1 UUIDs: they are always nicked. No skin hash or retry logic required.
-     */
+    /** Handle version 1 UUIDs: always nicked. */
     private void checkNickStatus(EntityPlayer entityPlayer) {
         Handler.asExecutor(() -> {
             UUID uuid = entityPlayer.getUniqueID();

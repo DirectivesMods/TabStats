@@ -11,9 +11,7 @@ import tabstats.playerapi.exception.PlayerNullException;
 import tabstats.util.ChatColor;
 import tabstats.util.Handler;
 import tabstats.util.NickDetector;
-import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
-import com.google.gson.JsonParser;
 import net.minecraft.entity.player.EntityPlayer;
 
 import java.util.*;
@@ -164,12 +162,12 @@ public class StatWorld {
             registerAlias(hPlayer, playerName);
             registerAlias(hPlayer, displayComponent);
 
-            // Fire both API call AND nick detection simultaneously for speed
+            // Fire API call; nick status is inferred instantly from UUID version (v1 = nicked)
             boolean apiSuccess = false;
             Exception apiException = null;
             int uuidVersion = uuid.version();
             
-            // 1. Fire API call immediately
+            // 1. Attempt API call
             try {
                 JsonObject wholeObject = new HypixelAPI().getWholeObject(playerUUID);
                 JsonObject playerObject = wholeObject.get("player").getAsJsonObject();
@@ -193,7 +191,7 @@ public class StatWorld {
             // 2. Determine nick status purely from UUID version (v1 = nicked)
             boolean isNicked = NickDetector.isNickedUuid(playerUUID);
 
-            // 3. Handle results based on what we got
+            // 3. Handle results based on outcomes
             if (apiSuccess) {
                 // API worked - player is definitely real, not nicked (API wouldn't return data for nicked players)
                 hPlayer.setNicked(false);
