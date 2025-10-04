@@ -13,12 +13,15 @@ import java.io.Writer;
 import java.util.HashMap;
 
 import static tabstats.config.ModConfigNames.APIKEY;
+import static tabstats.config.ModConfigNames.RENDER_HEADER_FOOTER;
 
 public class ModConfig {
+    private static final String CONFIG_FILENAME = "settings.json";
     private String apiKey;
     private String lastApiKey; // Track the last API key to detect changes
     private static ModConfig instance;
     private File configFile;
+    private boolean renderHeaderFooter = true;
 
     public static ModConfig getInstance() {
         if (instance == null) instance = new ModConfig();
@@ -67,6 +70,14 @@ public class ModConfig {
         }
     }
 
+    public boolean isRenderHeaderFooterEnabled() {
+        return this.renderHeaderFooter;
+    }
+
+    public void setRenderHeaderFooterEnabled(boolean value) {
+        this.renderHeaderFooter = value;
+    }
+
     @SuppressWarnings("ResultOfMethodCallIgnored")
     private void makeFile() {
         File file = getFile();
@@ -82,7 +93,7 @@ public class ModConfig {
         try {
             if (file.createNewFile()) {
                 try (FileWriter writer = new FileWriter(file)) {
-                    String placeholder = "{\n  \"ApiKey\": \"XXXXXXXX-XXXX-XXXX-XXXX-XXXXXXXXXXXX\"\n}\n";
+                    String placeholder = "{\n  \"ApiKey\": \"XXXXXXXX-XXXX-XXXX-XXXX-XXXXXXXXXXXX\",\n  \"RenderHeaderFooter\": true\n}\n";
                     writer.write(placeholder);
                     writer.flush();
                 }
@@ -98,6 +109,7 @@ public class ModConfig {
         }
         apiKey = getString(APIKEY);
         lastApiKey = apiKey;
+        renderHeaderFooter = getBoolean(RENDER_HEADER_FOOTER, true);
     }
 
     public File getFile() {
@@ -124,7 +136,7 @@ public class ModConfig {
             folder.mkdirs();
         }
 
-        configFile = new File(folder, "apikey.json");
+        configFile = new File(folder, CONFIG_FILENAME);
         return configFile;
     }
 
@@ -135,6 +147,7 @@ public class ModConfig {
     public void save() {
         HashMap<String, Object> map = new HashMap<>();
         map.put(APIKEY.toString(), this.apiKey); // Use the internal field, not getApiKey()
+        map.put(RENDER_HEADER_FOOTER.toString(), this.renderHeaderFooter);
         File file = getFile();
         try (Writer writer = new FileWriter(file)) {
             Handler.getGson().toJson(map, writer);
@@ -161,6 +174,26 @@ public class ModConfig {
         } catch (Exception ex) {
             // Silently handle read errors
             return "";
+        }
+    }
+
+    public boolean getBoolean(ModConfigNames key, boolean defaultValue) {
+        File file = getFile();
+        if (!file.exists()) {
+            return defaultValue;
+        }
+
+        JsonParser parser = new JsonParser();
+
+        try (FileReader reader = new FileReader(file)) {
+            JsonObject object = parser.parse(reader).getAsJsonObject();
+            if (!object.has(key.toString())) {
+                return defaultValue;
+            }
+            return object.get(key.toString()).getAsBoolean();
+        } catch (Exception ex) {
+            // Silently handle read errors
+            return defaultValue;
         }
     }
 }

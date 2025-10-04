@@ -27,5 +27,5 @@ Discord: [https://discord.gg/F9pQmx37XJ](https://discord.gg/F9pQmx37XJ)
 
 ## Info:
 - This project is not affiliated or endorsed by Hypixel
-- Your API key is stored in ~minecraft/tabstats/apikey.json and you can update it manually from there
+- Your API key and settings are stored in ~minecraft/tabstats/settings.json and you can update them manually from there
 - This does not work on Lunar - if someone wants to port it to Weave you may

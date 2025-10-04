@@ -51,8 +51,7 @@ public class StatsTab extends GuiPlayerTabOverlay {
     private IChatComponent header;
     /** The amount of time since the playerlist was opened (went from not being rendered, to being rendered) */
     private long lastTimeOpened;
-    /** Whether or not the playerlist is currently being rendered */
-    public boolean tabBeingRendered;
+    private boolean renderHeaderFooter = true;
     private final int entryHeight = 12;
     private final int backgroundBorderSize = 12;
     public static final int headSize = 12;
@@ -69,20 +68,53 @@ public class StatsTab extends GuiPlayerTabOverlay {
         this.mc = mcIn;
         this.guiIngame = guiIngameIn;
     }
+
+    public void setRenderHeaderFooter(boolean renderHeaderFooterIn) {
+        this.renderHeaderFooter = renderHeaderFooterIn;
+    }
+
+    public boolean shouldRenderHeaderFooter() {
+        return this.renderHeaderFooter;
+    }
+
+    @Override
+    public void setHeader(IChatComponent headerIn) {
+        super.setHeader(headerIn);
+        this.header = headerIn;
+    }
+
+    @Override
+    public void setFooter(IChatComponent footerIn) {
+        super.setFooter(footerIn);
+        this.footer = footerIn;
+    }
+
+    @Override
+    public void resetFooterHeader() {
+        super.resetFooterHeader();
+        this.header = null;
+        this.footer = null;
+    }
     
     /**
      * Calculates the maximum number of players that can fit on screen before overflow
      * @param scaledRes The current scaled resolution
      * @param startingY The Y position where player entries start
+     * @param footerHeight Total pixel height reserved for the footer
+     * @param footerSpacing Spacer between player entries and the footer
      * @return Maximum players that fit on screen
      */
-    private int calculateMaxVisiblePlayers(ScaledResolution scaledRes, int startingY) {
-        // Available height = screen height - starting position - bottom padding
-        int availableHeight = scaledRes.getScaledHeight() - startingY - this.backgroundBorderSize - this.entryHeight;
-        
+    private int calculateMaxVisiblePlayers(ScaledResolution scaledRes, int startingY, int footerHeight, int footerSpacing) {
+        // Available height = screen height - starting position - bottom padding and footer area
+        int availableHeight = scaledRes.getScaledHeight() - startingY - this.backgroundBorderSize - this.entryHeight - footerHeight - footerSpacing;
+
+        if (availableHeight < 0) {
+            availableHeight = 0;
+        }
+
         // Each player entry takes entryHeight + 1 pixel spacing
         int entryTotalHeight = this.entryHeight + 1;
-        
+
         // Calculate how many complete entries fit, minimum 1
         return Math.max(1, availableHeight / entryTotalHeight);
     }
@@ -135,28 +167,34 @@ public class StatsTab extends GuiPlayerTabOverlay {
         targetScrollOffset = 0.0f;
     }
     
-    /**
-     * Gets the current scroll offset for external use
-     */
-    public float getScrollOffset() {
-        return scrollOffset;
-    }
-    
-    /**
-     * Gets whether the tab list is currently scrollable
-     */
-    public boolean isScrollable() {
-        return maxVisiblePlayers > 0 && maxVisiblePlayers < MAX_TAB_PLAYERS;
-    }
-
     public void renderNewPlayerlist(int width, Scoreboard scoreboardIn, ScoreObjective scoreObjectiveIn, List<Stat> gameStatTitleList, String gamemode) {
         NetHandlerPlayClient netHandler = this.mc.thePlayer.sendQueue;
         StatWorld statWorld = TabStats.getTabStats().getStatWorld();
         List<NetworkPlayerInfo> playerList = collectEligiblePlayers(netHandler, statWorld);
 
         ScaledResolution scaledRes = new ScaledResolution(this.mc);
-        int startingX = scaledRes.getScaledWidth() / 2 - width / 2;
-        int startingY = 20;
+        int centerX = scaledRes.getScaledWidth() / 2;
+        int startingX = centerX - width / 2;
+        int baseY = 20;
+        int fontHeight = this.mc.fontRendererObj.FONT_HEIGHT;
+
+        IChatComponent headerComponent = this.renderHeaderFooter ? this.header : null;
+        String[] headerLines = headerComponent != null ? StringUtils.splitPreserveAllTokens(headerComponent.getFormattedText(), '\n') : null;
+        int headerLineCount = headerLines != null ? headerLines.length : 0;
+        int headerHeight = headerLineCount * fontHeight;
+
+        IChatComponent footerComponent = this.renderHeaderFooter ? this.footer : null;
+        String[] footerLines = footerComponent != null ? StringUtils.splitPreserveAllTokens(footerComponent.getFormattedText(), '\n') : null;
+        int footerLineCount = footerLines != null ? footerLines.length : 0;
+        int footerHeight = footerLineCount * fontHeight;
+
+        int headerSpacing = headerHeight > 0 ? 1 : 0;
+        int footerSpacing = footerHeight > 0 ? 1 : 0;
+
+        int startingY = baseY + headerHeight;
+        if (headerHeight > 0) {
+            startingY += headerSpacing;
+        }
 
         String objectiveName = "";
         if (scoreObjectiveIn != null) {
@@ -168,7 +206,7 @@ public class StatsTab extends GuiPlayerTabOverlay {
         int playerListSize = playerList.size();
         this.lastPlayerListSize = playerListSize;
 
-        this.maxVisiblePlayers = calculateMaxVisiblePlayers(scaledRes, startingY);
+        this.maxVisiblePlayers = calculateMaxVisiblePlayers(scaledRes, startingY, footerHeight, footerSpacing);
 
         float maxScroll = Math.max(0, playerListSize - maxVisiblePlayers);
         targetScrollOffset = MathHelper.clamp_float(targetScrollOffset, 0.0f, maxScroll);
@@ -185,11 +223,21 @@ public class StatsTab extends GuiPlayerTabOverlay {
 
         int textBaselineOffset = this.entryHeight / 2 - 4;
         int backgroundLeft = startingX - this.backgroundBorderSize - (objectiveName.isEmpty() ? 0 : 5 + this.mc.fontRendererObj.getStringWidth(objectiveName));
-        int backgroundRight = scaledRes.getScaledWidth() / 2 + width / 2 + this.backgroundBorderSize;
-        int backgroundBottom = startingY + (visiblePlayerCount + 1) * (this.entryHeight + 1) - 1 + this.backgroundBorderSize;
-        drawRect(backgroundLeft, startingY - this.backgroundBorderSize, backgroundRight, backgroundBottom, Integer.MIN_VALUE);
+        int backgroundRight = centerX + width / 2 + this.backgroundBorderSize;
+        int backgroundTop = baseY - this.backgroundBorderSize;
+        int playerSectionHeight = (visiblePlayerCount + 1) * (this.entryHeight + 1);
+        int backgroundBottom = startingY + playerSectionHeight - 1 + footerSpacing + footerHeight + this.backgroundBorderSize;
+        drawRect(backgroundLeft, backgroundTop, backgroundRight, backgroundBottom, Integer.MIN_VALUE);
 
-        drawRect(startingX, startingY, scaledRes.getScaledWidth() / 2 + width / 2, startingY + this.entryHeight, 553648127);
+        drawRect(startingX, startingY, centerX + width / 2, startingY + this.entryHeight, 553648127);
+
+        if (headerLineCount > 0 && headerLines != null) {
+            int headerY = baseY;
+            for (String line : headerLines) {
+                this.drawCenteredString(this.mc.fontRendererObj, line, centerX, headerY, ChatColor.WHITE.getRGB());
+                headerY += fontHeight;
+            }
+        }
 
         int statXSpacer = startingX + headSize + 2;
         this.mc.fontRendererObj.drawStringWithShadow(ChatColor.BOLD + "NAME", statXSpacer, startingY + textBaselineOffset, ChatColor.WHITE.getRGB());
@@ -220,7 +268,7 @@ public class StatsTab extends GuiPlayerTabOverlay {
 
         for (NetworkPlayerInfo playerInfo : visiblePlayers) {
             int xSpacer = startingX;
-            drawRect(xSpacer, ySpacer, scaledRes.getScaledWidth() / 2 + width / 2, ySpacer + this.entryHeight, 553648127);
+            drawRect(xSpacer, ySpacer, centerX + width / 2, ySpacer + this.entryHeight, 553648127);
 
             GlStateManager.color(1.0F, 1.0F, 1.0F, 1.0F);
             GlStateManager.enableAlpha();
@@ -303,7 +351,7 @@ public class StatsTab extends GuiPlayerTabOverlay {
         GL11.glDisable(GL11.GL_SCISSOR_TEST);
 
         if (playerListSize > maxVisiblePlayers) {
-            int indicatorX = scaledRes.getScaledWidth() / 2 + width / 2 - 10;
+            int indicatorX = centerX + width / 2 - 10;
 
             if (startIndex > 0) {
                 String upArrow = ChatColor.WHITE + "▲";
@@ -314,6 +362,14 @@ public class StatsTab extends GuiPlayerTabOverlay {
                 String downArrow = ChatColor.WHITE + "▼";
                 int downY = startingY + this.entryHeight + 1 + (visiblePlayerCount * (this.entryHeight + 1)) - 10;
                 this.mc.fontRendererObj.drawStringWithShadow(downArrow, indicatorX, downY, ChatColor.WHITE.getRGB());
+            }
+        }
+
+        if (footerLineCount > 0 && footerLines != null) {
+            int footerY = startingY + playerSectionHeight + footerSpacing;
+            for (String line : footerLines) {
+                this.drawCenteredString(this.mc.fontRendererObj, line, centerX, footerY, ChatColor.WHITE.getRGB());
+                footerY += fontHeight;
             }
         }
     }
@@ -475,6 +531,8 @@ public class StatsTab extends GuiPlayerTabOverlay {
 //                    colorPrefix = colorPrefix.replace(playerRank, "");
 //                }
             }
+
+            return colorPrefix + playerRank + playerInfo.getGameProfile().getName() + teamSuffix;
         }
 
         return this.getPlayerName(playerInfo);

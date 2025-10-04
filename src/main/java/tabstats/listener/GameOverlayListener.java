@@ -1,16 +1,21 @@
 package tabstats.listener;
 
 import tabstats.TabStats;
+import tabstats.config.ModConfig;
 import tabstats.playerapi.HPlayer;
 import tabstats.playerapi.StatWorld;
 import tabstats.playerapi.api.stats.Stat;
 import tabstats.render.StatsTab;
 import tabstats.util.ChatColor;
 import net.minecraft.client.Minecraft;
+import net.minecraft.client.gui.GuiIngame;
+import net.minecraft.client.gui.GuiPlayerTabOverlay;
 import net.minecraft.scoreboard.ScoreObjective;
 import net.minecraft.scoreboard.Scoreboard;
+import net.minecraft.util.IChatComponent;
 import net.minecraftforge.client.event.RenderGameOverlayEvent;
 import net.minecraftforge.fml.common.eventhandler.SubscribeEvent;
+import net.minecraftforge.fml.relauncher.ReflectionHelper;
 
 import java.util.ArrayList;
 import java.util.Collections;
@@ -19,9 +24,11 @@ import java.util.List;
 public class GameOverlayListener {
     private final StatsTab statsTab;
     private final Minecraft mc = Minecraft.getMinecraft();
+    private boolean overlayInjected = false;
 
     public GameOverlayListener() {
         this.statsTab = new StatsTab(this.mc, this.mc.ingameGUI);
+        this.statsTab.setRenderHeaderFooter(ModConfig.getInstance().isRenderHeaderFooterEnabled());
     }
     
     /**
@@ -40,6 +47,8 @@ public class GameOverlayListener {
         if (this.mc.thePlayer == null) {
             return;
         }
+
+        ensureCustomOverlayInjected();
 
         event.setCanceled(true);
 
@@ -98,5 +107,43 @@ public class GameOverlayListener {
         }
 
         return width;
+    }
+
+    private void ensureCustomOverlayInjected() {
+        if (this.overlayInjected) {
+            return;
+        }
+
+        GuiIngame guiIngame = this.mc.ingameGUI;
+        if (guiIngame == null) {
+            return;
+        }
+
+        try {
+            GuiPlayerTabOverlay currentOverlay = ReflectionHelper.getPrivateValue(GuiIngame.class, guiIngame, new String[]{"overlayPlayerList", "field_175196_v"});
+
+            if (currentOverlay == this.statsTab) {
+                this.overlayInjected = true;
+                return;
+            }
+
+            ReflectionHelper.setPrivateValue(GuiIngame.class, guiIngame, this.statsTab, new String[]{"overlayPlayerList", "field_175196_v"});
+
+            if (currentOverlay != null) {
+                IChatComponent currentHeader = ReflectionHelper.getPrivateValue(GuiPlayerTabOverlay.class, currentOverlay, new String[]{"header", "field_175256_i"});
+                IChatComponent currentFooter = ReflectionHelper.getPrivateValue(GuiPlayerTabOverlay.class, currentOverlay, new String[]{"footer", "field_175255_h"});
+
+                if (currentHeader != null) {
+                    this.statsTab.setHeader(currentHeader.createCopy());
+                }
+
+                if (currentFooter != null) {
+                    this.statsTab.setFooter(currentFooter.createCopy());
+                }
+            }
+
+            this.overlayInjected = true;
+        } catch (ReflectionHelper.UnableToFindFieldException | ReflectionHelper.UnableToAccessFieldException ignored) {
+        }
     }
 }
