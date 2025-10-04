@@ -92,9 +92,12 @@ public class ModConfig {
 
         try {
             if (file.createNewFile()) {
+                JsonObject defaults = new JsonObject();
+                defaults.addProperty(APIKEY.toString(), "");
+                defaults.addProperty(RENDER_HEADER_FOOTER.toString(), true);
+
                 try (FileWriter writer = new FileWriter(file)) {
-                    String placeholder = "{\n  \"ApiKey\": \"XXXXXXXX-XXXX-XXXX-XXXX-XXXXXXXXXXXX\",\n  \"RenderHeaderFooter\": true\n}\n";
-                    writer.write(placeholder);
+                    Handler.getGson().toJson(defaults, writer);
                     writer.flush();
                 }
             }
