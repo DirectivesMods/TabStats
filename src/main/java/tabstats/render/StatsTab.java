@@ -53,8 +53,6 @@ public class StatsTab extends GuiPlayerTabOverlay {
     private long lastTimeOpened;
     /** Whether or not the playerlist is currently being rendered */
     public boolean tabBeingRendered;
-    /* whether or not rank should come before color prefix */
-    private boolean rankBeforePrefix = false;
     private final int entryHeight = 12;
     private final int backgroundBorderSize = 12;
     public static final int headSize = 12;
@@ -476,12 +474,6 @@ public class StatsTab extends GuiPlayerTabOverlay {
 //                } else {
 //                    colorPrefix = colorPrefix.replace(playerRank, "");
 //                }
-            }
-
-            if (this.rankBeforePrefix) {
-                return playerRank + colorPrefix + playerInfo.getGameProfile().getName() + teamSuffix;
-            } else {
-                return colorPrefix + playerRank + playerInfo.getGameProfile().getName() + teamSuffix;
             }
         }
 
