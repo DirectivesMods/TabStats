@@ -1,6 +1,7 @@
 package tabstats.listener;
 
 import tabstats.TabStats;
+import tabstats.config.ModConfig;
 import tabstats.render.StatsTab;
 import net.minecraft.client.Minecraft;
 import net.minecraftforge.client.event.MouseEvent;
@@ -12,6 +13,10 @@ public class InputListener {
     @SubscribeEvent
     public void onMouse(MouseEvent event) {
         if (event.dwheel == 0) {
+            return;
+        }
+
+        if (!ModConfig.getInstance().isModEnabled()) {
             return;
         }
 

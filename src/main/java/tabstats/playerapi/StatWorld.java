@@ -1,5 +1,6 @@
 package tabstats.playerapi;
 
+import tabstats.config.ModConfig;
 import tabstats.playerapi.api.HypixelAPI;
 import tabstats.playerapi.api.games.bedwars.Bedwars;
 import tabstats.playerapi.api.games.duels.Duels;
@@ -141,11 +142,18 @@ public class StatWorld {
      * Fetch stats for a specific player using the retry system
      */
     public void fetchStats(EntityPlayer entityPlayer) {
+        if (!ModConfig.getInstance().isModEnabled()) {
+            return;
+        }
         fetchStatsWithRetry(entityPlayer, 0);
     }
     
     private void fetchStatsWithRetry(EntityPlayer entityPlayer, int apiRetryAttempt) {
         Handler.asExecutor(() -> {
+            if (!ModConfig.getInstance().isModEnabled()) {
+                this.statAssembly.remove(entityPlayer.getUniqueID());
+                return;
+            }
             UUID uuid = entityPlayer.getUniqueID();
             String playerName = entityPlayer.getName();
             String playerUUID = entityPlayer.getUniqueID().toString().replace("-", "");
@@ -226,6 +234,10 @@ public class StatWorld {
 
                     // Schedule retry with exponential backoff
                     Handler.asExecutor(() -> {
+                        if (!ModConfig.getInstance().isModEnabled()) {
+                            this.statAssembly.remove(entityPlayer.getUniqueID());
+                            return;
+                        }
                         try {
                             Thread.sleep(delayMs);
                             fetchStatsWithRetry(entityPlayer, apiRetryAttempt + 1);

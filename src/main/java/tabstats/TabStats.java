@@ -33,6 +33,8 @@ public class TabStats {
         this.statWorld = new WorldLoader();
         this.gameOverlayListener = new GameOverlayListener();
         this.registerListeners(statWorld, gameOverlayListener, new GuiOpenListener(), new InputListener());
+
+        this.applyModEnabled(ModConfig.getInstance().isModEnabled());
     }
 
     @Mod.EventHandler
@@ -54,5 +56,23 @@ public class TabStats {
     
     public GameOverlayListener getGameOverlayListener() {
         return gameOverlayListener;
+    }
+
+    public boolean isModEnabled() {
+        return ModConfig.getInstance().isModEnabled();
+    }
+
+    public void applyModEnabled(boolean enabled) {
+        if (this.gameOverlayListener != null) {
+            this.gameOverlayListener.setModEnabled(enabled);
+        }
+
+        if (this.statWorld != null) {
+            if (enabled) {
+                this.statWorld.recheckAllPlayers();
+            } else {
+                this.statWorld.onDelete();
+            }
+        }
     }
 }

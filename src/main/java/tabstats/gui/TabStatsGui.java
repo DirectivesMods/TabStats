@@ -15,37 +15,54 @@ public class TabStatsGui extends GuiScreen {
     private MaskedGuiTextField apiField;
     private boolean showingApiKey = false;
     private GuiButton headerFooterButton;
+    private GuiButton modToggleButton;
+    private int fieldX;
+    private int fieldY;
+    private int titleY;
+    private int fieldWidth;
 
     @Override
     public void initGui() {
         super.initGui();
         this.buttonList.clear();
         int centerX = this.width / 2;
-        int y = this.height / 2 - 20;
+        this.titleY = this.height / 2 - 80;
+        int toggleY = this.titleY + 20;
+        int headerToggleY = toggleY + 24;
 
         int fieldPadding = 10;
         int desiredWidth = this.fontRendererObj.getStringWidth("WWWWWWWW-WWWW-WWWW-WWWW-WWWWWWWWWWWW") + fieldPadding;
-        int fieldWidth = Math.max(220, desiredWidth);
-        int fieldX = centerX - fieldWidth / 2;
+        this.fieldWidth = Math.max(220, desiredWidth);
+        this.fieldX = centerX - this.fieldWidth / 2;
+        this.fieldY = headerToggleY + 36;
+        int buttonRowY = this.fieldY + 32;
 
         ModConfig cfg = ModConfig.getInstance();
 
-        this.apiField = new MaskedGuiTextField(3, this.fontRendererObj, fieldX, y - 24, fieldWidth, 20);
+        boolean modEnabled = cfg.isModEnabled();
+        this.modToggleButton = new GuiButton(6, this.fieldX, toggleY, this.fieldWidth, 20, formatModToggleLabel(modEnabled));
+        this.buttonList.add(this.modToggleButton);
+
+        boolean headerFooterEnabled = cfg.isRenderHeaderFooterEnabled();
+        this.headerFooterButton = new GuiButton(5, this.fieldX, headerToggleY, this.fieldWidth, 20, formatHeaderFooterLabel(headerFooterEnabled));
+        this.buttonList.add(this.headerFooterButton);
+
+        this.apiField = new MaskedGuiTextField(3, this.fontRendererObj, this.fieldX, this.fieldY, this.fieldWidth, 20);
         this.apiField.setMaxStringLength(50);
         String current = cfg.getApiKey();
         this.apiField.setText(current == null ? "" : current);
         this.showingApiKey = false;
         this.apiField.setRevealing(this.showingApiKey);
 
-        int showButtonX = fieldX + fieldWidth + 10;
-        this.buttonList.add(new GuiButton(4, showButtonX, y - 24, 40, 20, "Show"));
-        this.buttonList.add(new GuiButton(0, centerX - 100, y + 8, 60, 20, "Save"));
-        this.buttonList.add(new GuiButton(1, centerX - 30, y + 8, 60, 20, "Clear"));
-        this.buttonList.add(new GuiButton(2, centerX + 40, y + 8, 60, 20, "Close"));
+        int showButtonX = this.fieldX + this.fieldWidth + 10;
+        this.buttonList.add(new GuiButton(4, showButtonX, this.fieldY, 60, 20, "Show"));
 
-        boolean headerFooterEnabled = cfg.isRenderHeaderFooterEnabled();
-        this.headerFooterButton = new GuiButton(5, centerX - 100, y + 34, 200, 20, formatHeaderFooterLabel(headerFooterEnabled));
-        this.buttonList.add(this.headerFooterButton);
+        int buttonSpacing = 6;
+        int actionButtonWidth = (this.fieldWidth - buttonSpacing * 2) / 3;
+        int firstButtonX = this.fieldX;
+        this.buttonList.add(new GuiButton(0, firstButtonX, buttonRowY, actionButtonWidth, 20, "Save"));
+        this.buttonList.add(new GuiButton(1, firstButtonX + actionButtonWidth + buttonSpacing, buttonRowY, actionButtonWidth, 20, "Clear"));
+        this.buttonList.add(new GuiButton(2, firstButtonX + (actionButtonWidth + buttonSpacing) * 2, buttonRowY, actionButtonWidth, 20, "Close"));
     }
 
     @Override
@@ -60,10 +77,13 @@ public class TabStatsGui extends GuiScreen {
                 cfg.save();
                 this.apiField.setText(key);
                 this.apiField.setRevealing(this.showingApiKey);
-                try {
-                    tabstats.TabStats.getTabStats().getStatWorld().recheckAllPlayers();
-                } catch (Exception ignored) {
-                    // Silent fail - don't spam console
+                TabStats instance = TabStats.getTabStats();
+                if (instance != null && instance.isModEnabled() && instance.getStatWorld() != null) {
+                    try {
+                        instance.getStatWorld().recheckAllPlayers();
+                    } catch (Exception ignored) {
+                        // Silent fail - don't spam console
+                    }
                 }
                 Minecraft.getMinecraft().thePlayer.addChatMessage(new ChatComponentText(ChatColor.GREEN + "[TabStats] " + ChatColor.WHITE + "API key updated."));
             } else {
@@ -77,10 +97,13 @@ public class TabStatsGui extends GuiScreen {
                 cfg.save();
                 this.apiField.setText("");
                 this.apiField.setRevealing(this.showingApiKey);
-                try {
-                    tabstats.TabStats.getTabStats().getStatWorld().recheckAllPlayers();
-                } catch (Exception ignored) {
-                    // Silent fail - don't spam console
+                TabStats instance = TabStats.getTabStats();
+                if (instance != null && instance.isModEnabled() && instance.getStatWorld() != null) {
+                    try {
+                        instance.getStatWorld().recheckAllPlayers();
+                    } catch (Exception ignored) {
+                        // Silent fail - don't spam console
+                    }
                 }
                 Minecraft.getMinecraft().thePlayer.addChatMessage(new ChatComponentText(ChatColor.GREEN + "[TabStats] " + ChatColor.WHITE + "API key cleared."));
             } else {
@@ -114,6 +137,24 @@ public class TabStatsGui extends GuiScreen {
             if (Minecraft.getMinecraft().thePlayer != null) {
                 Minecraft.getMinecraft().thePlayer.addChatMessage(new ChatComponentText(ChatColor.GREEN + "[TabStats] " + ChatColor.WHITE + "Header/footer " + (newValue ? "enabled." : "disabled.")));
             }
+        } else if (button.id == 6) {
+            boolean newValue = !cfg.isModEnabled();
+            cfg.setModEnabled(newValue);
+            cfg.save();
+
+            if (this.modToggleButton != null) {
+                this.modToggleButton.displayString = formatModToggleLabel(newValue);
+            }
+
+            TabStats instance = TabStats.getTabStats();
+            if (instance != null) {
+                instance.applyModEnabled(newValue);
+            }
+
+            if (Minecraft.getMinecraft().thePlayer != null) {
+                String status = newValue ? ChatColor.GREEN + "Enabled" : ChatColor.RED + "Disabled";
+                Minecraft.getMinecraft().thePlayer.addChatMessage(new ChatComponentText(ChatColor.GREEN + "[TabStats] " + ChatColor.WHITE + "Mod " + status + ChatColor.WHITE + "."));
+            }
         }
     }
 
@@ -138,13 +179,17 @@ public class TabStatsGui extends GuiScreen {
     @Override
     public void drawScreen(int mouseX, int mouseY, float partialTicks) {
         this.drawDefaultBackground();
-        drawCenteredString(this.fontRendererObj, "Hypixel API Key", this.width / 2, this.height / 2 - 60, 0xFFFFFF);
-        drawString(this.fontRendererObj, "Enter your Hypixel API key below:", this.apiField.xPosition, this.height / 2 - 45, 0xAAAAAA);
+        drawCenteredString(this.fontRendererObj, "TabStats", this.width / 2, this.titleY, 0xFFFFFF);
+        drawString(this.fontRendererObj, "Hypixel API Key:", this.fieldX, this.fieldY - 12, 0xAAAAAA);
         this.apiField.drawTextBox();
         super.drawScreen(mouseX, mouseY, partialTicks);
     }
 
     private String formatHeaderFooterLabel(boolean enabled) {
         return "Header/Footer: " + (enabled ? ChatColor.GREEN + "Enabled" : ChatColor.RED + "Disabled");
+    }
+
+    private String formatModToggleLabel(boolean enabled) {
+        return "Mod: " + (enabled ? ChatColor.GREEN + "Enabled" : ChatColor.RED + "Disabled");
     }
 }

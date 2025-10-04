@@ -25,10 +25,13 @@ public class GameOverlayListener {
     private final StatsTab statsTab;
     private final Minecraft mc = Minecraft.getMinecraft();
     private boolean overlayInjected = false;
+    private GuiPlayerTabOverlay originalOverlay;
+    private boolean modEnabled;
 
     public GameOverlayListener() {
         this.statsTab = new StatsTab(this.mc, this.mc.ingameGUI);
         this.statsTab.setRenderHeaderFooter(ModConfig.getInstance().isRenderHeaderFooterEnabled());
+        this.modEnabled = ModConfig.getInstance().isModEnabled();
     }
     
     /**
@@ -45,6 +48,16 @@ public class GameOverlayListener {
         }
 
         if (this.mc.thePlayer == null) {
+            return;
+        }
+
+        boolean configEnabled = ModConfig.getInstance().isModEnabled();
+        if (configEnabled != this.modEnabled) {
+            setModEnabled(configEnabled);
+        }
+
+        if (!this.modEnabled) {
+            restoreOriginalOverlay();
             return;
         }
 
@@ -110,7 +123,7 @@ public class GameOverlayListener {
     }
 
     private void ensureCustomOverlayInjected() {
-        if (this.overlayInjected) {
+        if (!this.modEnabled || this.overlayInjected) {
             return;
         }
 
@@ -121,6 +134,10 @@ public class GameOverlayListener {
 
         try {
             GuiPlayerTabOverlay currentOverlay = ReflectionHelper.getPrivateValue(GuiIngame.class, guiIngame, new String[]{"overlayPlayerList", "field_175196_v"});
+
+            if (this.originalOverlay == null && currentOverlay != this.statsTab) {
+                this.originalOverlay = currentOverlay;
+            }
 
             if (currentOverlay == this.statsTab) {
                 this.overlayInjected = true;
@@ -145,5 +162,43 @@ public class GameOverlayListener {
             this.overlayInjected = true;
         } catch (ReflectionHelper.UnableToFindFieldException | ReflectionHelper.UnableToAccessFieldException ignored) {
         }
+    }
+
+    public void setModEnabled(boolean enabled) {
+        if (this.modEnabled == enabled) {
+            return;
+        }
+
+        this.modEnabled = enabled;
+
+        if (!enabled) {
+            restoreOriginalOverlay();
+            this.statsTab.resetScroll();
+        } else {
+            this.overlayInjected = false;
+            this.statsTab.setRenderHeaderFooter(ModConfig.getInstance().isRenderHeaderFooterEnabled());
+        }
+    }
+
+    private void restoreOriginalOverlay() {
+        if (!this.overlayInjected) {
+            return;
+        }
+
+        GuiIngame guiIngame = this.mc.ingameGUI;
+        if (guiIngame == null) {
+            return;
+        }
+
+        try {
+            GuiPlayerTabOverlay target = this.originalOverlay != null ? this.originalOverlay : new GuiPlayerTabOverlay(this.mc, guiIngame);
+            if (this.originalOverlay == null) {
+                this.originalOverlay = target;
+            }
+            ReflectionHelper.setPrivateValue(GuiIngame.class, guiIngame, target, new String[]{"overlayPlayerList", "field_175196_v"});
+        } catch (ReflectionHelper.UnableToFindFieldException | ReflectionHelper.UnableToAccessFieldException ignored) {
+        }
+
+        this.overlayInjected = false;
     }
 }

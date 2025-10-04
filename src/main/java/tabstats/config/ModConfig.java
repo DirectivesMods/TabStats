@@ -1,7 +1,6 @@
 package tabstats.config;
 
 import tabstats.util.Handler;
-import tabstats.util.References;
 import net.minecraft.client.Minecraft;
 import com.google.gson.JsonObject;
 import com.google.gson.JsonParser;
@@ -14,6 +13,7 @@ import java.util.HashMap;
 
 import static tabstats.config.ModConfigNames.APIKEY;
 import static tabstats.config.ModConfigNames.RENDER_HEADER_FOOTER;
+import static tabstats.config.ModConfigNames.MOD_ENABLED;
 
 public class ModConfig {
     private static final String CONFIG_FILENAME = "settings.json";
@@ -22,6 +22,7 @@ public class ModConfig {
     private static ModConfig instance;
     private File configFile;
     private boolean renderHeaderFooter = true;
+    private boolean modEnabled = true;
 
     public static ModConfig getInstance() {
         if (instance == null) instance = new ModConfig();
@@ -49,6 +50,10 @@ public class ModConfig {
     private void onApiKeyChanged() {
         // Clear cached player data when API key changes
         try {
+            if (!isModEnabled()) {
+                return;
+            }
+
             tabstats.TabStats tabStats = tabstats.TabStats.getTabStats();
             if (tabStats != null && tabStats.getStatWorld() != null) {
                 tabStats.getStatWorld().recheckAllPlayers();
@@ -78,6 +83,14 @@ public class ModConfig {
         this.renderHeaderFooter = value;
     }
 
+    public boolean isModEnabled() {
+        return this.modEnabled;
+    }
+
+    public void setModEnabled(boolean value) {
+        this.modEnabled = value;
+    }
+
     @SuppressWarnings("ResultOfMethodCallIgnored")
     private void makeFile() {
         File file = getFile();
@@ -95,6 +108,7 @@ public class ModConfig {
                 JsonObject defaults = new JsonObject();
                 defaults.addProperty(APIKEY.toString(), "");
                 defaults.addProperty(RENDER_HEADER_FOOTER.toString(), true);
+                defaults.addProperty(MOD_ENABLED.toString(), true);
 
                 try (FileWriter writer = new FileWriter(file)) {
                     Handler.getGson().toJson(defaults, writer);
@@ -113,6 +127,7 @@ public class ModConfig {
         apiKey = getString(APIKEY);
         lastApiKey = apiKey;
         renderHeaderFooter = getBoolean(RENDER_HEADER_FOOTER, true);
+        modEnabled = getBoolean(MOD_ENABLED, true);
     }
 
     public File getFile() {
@@ -149,8 +164,9 @@ public class ModConfig {
 
     public void save() {
         HashMap<String, Object> map = new HashMap<>();
-        map.put(APIKEY.toString(), this.apiKey); // Use the internal field, not getApiKey()
+        map.put(APIKEY.toString(), this.apiKey == null ? "" : this.apiKey); // Use the internal field, not getApiKey()
         map.put(RENDER_HEADER_FOOTER.toString(), this.renderHeaderFooter);
+        map.put(MOD_ENABLED.toString(), this.modEnabled);
         File file = getFile();
         try (Writer writer = new FileWriter(file)) {
             Handler.getGson().toJson(map, writer);

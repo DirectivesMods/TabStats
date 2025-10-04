@@ -4,10 +4,10 @@ import net.minecraft.client.Minecraft;
 import net.minecraft.entity.player.EntityPlayer;
 import net.minecraft.util.IChatComponent;
 import tabstats.TabStats;
+import tabstats.config.ModConfig;
 import tabstats.listener.GameOverlayListener;
 import tabstats.util.ChatColor;
 import tabstats.util.Handler;
-import tabstats.util.NickDetector;
 import net.minecraftforge.fml.common.eventhandler.SubscribeEvent;
 import net.minecraftforge.fml.common.gameevent.TickEvent;
 import net.minecraft.world.World;
@@ -23,6 +23,7 @@ public class WorldLoader extends StatWorld {
     private final Minecraft mc = Minecraft.getMinecraft();
     private World lastObservedWorld;
     private static final Pattern VALID_USERNAME = Pattern.compile("^[A-Za-z0-9_]{3,16}$");
+    private boolean lastModEnabled = ModConfig.getInstance().isModEnabled();
 
     public boolean loadOrRender(EntityPlayer player) {
         if (player == null) return false;
@@ -53,6 +54,9 @@ public class WorldLoader extends StatWorld {
     /** Handle version 1 UUIDs: always nicked. */
     private void checkNickStatus(EntityPlayer entityPlayer) {
         Handler.asExecutor(() -> {
+            if (!ModConfig.getInstance().isModEnabled()) {
+                return;
+            }
             UUID uuid = entityPlayer.getUniqueID();
             String playerName = entityPlayer.getName();
             HPlayer hPlayer = new HPlayer(uuid.toString(), playerName);
@@ -65,6 +69,17 @@ public class WorldLoader extends StatWorld {
     /* populates and checks the stat world player cache every tick */
     @SubscribeEvent
     public void onTick(TickEvent event) {
+        boolean modEnabled = ModConfig.getInstance().isModEnabled();
+
+        if (!modEnabled) {
+            if (lastModEnabled) {
+                onDelete();
+            }
+            lastModEnabled = false;
+            return;
+        }
+
+        lastModEnabled = true;
         World currentWorld = mc.theWorld;
 
         if (currentWorld != lastObservedWorld) {
