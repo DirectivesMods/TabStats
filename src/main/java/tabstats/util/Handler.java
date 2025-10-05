@@ -15,6 +15,11 @@ public class Handler {
     private static final ExecutorService executorService = Executors.newFixedThreadPool(16,
         new ThreadFactoryBuilder().setNameFormat("TabStats-%d").setDaemon(true).build()
     );
+    private static final Gson GSON = new GsonBuilder()
+            .setPrettyPrinting()
+            .disableHtmlEscaping()
+            .setDateFormat(getDate().toPattern())
+            .create();
 
     private static Locale getLocale() {
         String language = System.getProperty("user.language");
@@ -35,11 +40,7 @@ public class Handler {
     }
 
     public static Gson getGson() {
-        return new GsonBuilder()
-            .setPrettyPrinting()
-            .disableHtmlEscaping()
-            .setDateFormat(getDate().toPattern())
-            .create();
+        return GSON;
     }
 
     public static SimpleDateFormat getDate() {
