@@ -67,12 +67,10 @@ public class TabStats {
             this.gameOverlayListener.setModEnabled(enabled);
         }
 
-        if (this.statWorld != null) {
-            if (enabled) {
-                this.statWorld.recheckAllPlayers();
-            } else {
-                this.statWorld.onDelete();
-            }
+        // When re-enabling, refresh the display to show current lobby
+        // When disabling, just stop processing - preserve cache for future use
+        if (enabled && this.statWorld != null) {
+            this.statWorld.rerenderTabList();
         }
     }
 }

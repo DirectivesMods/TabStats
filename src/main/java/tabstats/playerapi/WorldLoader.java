@@ -72,8 +72,9 @@ public class WorldLoader extends StatWorld {
         boolean modEnabled = ModConfig.getInstance().isModEnabled();
 
         if (!modEnabled) {
+            // Just reset scroll when disabling, preserve cache
             if (lastModEnabled) {
-                onDelete();
+                resetTabScroll();
             }
             lastModEnabled = false;
             return;
@@ -84,6 +85,7 @@ public class WorldLoader extends StatWorld {
 
         if (currentWorld != lastObservedWorld) {
             lastObservedWorld = currentWorld;
+            // Only reset scroll position on world change, preserve cache
             resetTabScroll();
         }
 
