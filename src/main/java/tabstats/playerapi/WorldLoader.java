@@ -58,8 +58,7 @@ public class WorldLoader extends StatWorld {
                 return;
             }
             UUID uuid = entityPlayer.getUniqueID();
-            String playerName = entityPlayer.getName();
-            HPlayer hPlayer = new HPlayer(uuid.toString(), playerName);
+            HPlayer hPlayer = new HPlayer(uuid.toString(), entityPlayer.getName());
             hPlayer.setNicked(true);
             this.addPlayer(uuid, hPlayer);
             this.removeFromStatAssembly(uuid);
@@ -69,9 +68,7 @@ public class WorldLoader extends StatWorld {
     /* populates and checks the stat world player cache every tick */
     @SubscribeEvent
     public void onTick(TickEvent event) {
-        boolean modEnabled = ModConfig.getInstance().isModEnabled();
-
-        if (!modEnabled) {
+        if (!ModConfig.getInstance().isModEnabled()) {
             // Just reset scroll when disabling, preserve cache
             if (lastModEnabled) {
                 resetTabScroll();
@@ -128,8 +125,7 @@ public class WorldLoader extends StatWorld {
     }
 
     public void checkCacheSize() {
-        int max = 500;
-        if (getWorldPlayers().size() > max) {
+        if (getWorldPlayers().size() > 500) {
             Set<UUID> safePlayers = new HashSet<>();
             for (EntityPlayer player : mc.theWorld.playerEntities) {
                 UUID uuid = player.getUniqueID();

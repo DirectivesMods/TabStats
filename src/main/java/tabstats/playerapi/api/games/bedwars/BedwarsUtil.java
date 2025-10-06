@@ -8,7 +8,6 @@ import java.util.HashMap;
 import java.util.Map;
 
 public abstract class BedwarsUtil extends HGameBase {
-    long starWave = 0;
     public BedwarsUtil(String playerName, String playerUUID) {
         super(playerName, playerUUID);
     }
@@ -85,11 +84,9 @@ public abstract class BedwarsUtil extends HGameBase {
     }
 
     public String getStarWithColor(int star) {
-        String starString = Integer.toString(star);
-
         PrestigeStyle style = getPrestigeStyle(star);
         if (style != null) {
-            return formatWithStyle(starString, style) + style.glyphColor + getBedwarsGlyph(star);
+            return formatWithStyle(Integer.toString(star), style) + style.glyphColor + getBedwarsGlyph(star);
         }
 
         return ChatColor.GRAY + "-";

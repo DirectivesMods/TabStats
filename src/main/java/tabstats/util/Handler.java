@@ -48,7 +48,6 @@ public class Handler {
     }
 
     public static String plsSplit(double value) {
-        DecimalFormat decimalFormat = new DecimalFormat("##.##");
-        return decimalFormat.format(value);
+        return new DecimalFormat("##.##").format(value);
     }
 }

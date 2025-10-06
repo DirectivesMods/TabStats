@@ -65,10 +65,7 @@ public class ModConfig {
 
     public void setApiKey(String key) {
         // Only update if the key actually changed
-        String normalizedKey = key == null ? "" : key.trim();
-        String currentKey = this.apiKey == null ? "" : this.apiKey.trim();
-
-        if (!normalizedKey.equals(currentKey)) {
+        if (!normalizeKey(key).equals(normalizeKey(this.apiKey))) {
             this.apiKey = key;
             // Update lastApiKey to prevent duplicate change detection
             this.lastApiKey = key;
@@ -89,6 +86,10 @@ public class ModConfig {
 
     public void setModEnabled(boolean value) {
         this.modEnabled = value;
+    }
+
+    private String normalizeKey(String key) {
+        return key == null ? "" : key.trim();
     }
 
     @SuppressWarnings("ResultOfMethodCallIgnored")
@@ -146,8 +147,7 @@ public class ModConfig {
         }
 
         if (folder == null) {
-            String userHome = System.getProperty("user.home");
-            folder = new File(userHome + File.separator + ".minecraft", "tabstats");
+            folder = new File(System.getProperty("user.home") + File.separator + ".minecraft", "tabstats");
         }
 
         if (!folder.exists()) {
@@ -182,10 +182,8 @@ public class ModConfig {
             return "";
         }
 
-        JsonParser parser = new JsonParser();
-
         try (FileReader reader = new FileReader(file)) {
-            JsonObject object = parser.parse(reader).getAsJsonObject();
+            JsonObject object = new JsonParser().parse(reader).getAsJsonObject();
             if (!object.has(key.toString())) {
                 return "";
             }
@@ -202,10 +200,8 @@ public class ModConfig {
             return defaultValue;
         }
 
-        JsonParser parser = new JsonParser();
-
         try (FileReader reader = new FileReader(file)) {
-            JsonObject object = parser.parse(reader).getAsJsonObject();
+            JsonObject object = new JsonParser().parse(reader).getAsJsonObject();
             if (!object.has(key.toString())) {
                 return defaultValue;
             }

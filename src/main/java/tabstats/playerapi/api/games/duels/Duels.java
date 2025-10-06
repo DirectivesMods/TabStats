@@ -42,10 +42,9 @@ public class Duels extends DuelsUtil {
         this.hasPlayed = false;
 
         try {
-            JsonObject obj = getGameData(wholeObject, game);
             if (!this.isNicked) {
                 this.hasPlayed = true;
-                this.duelJson = obj;
+                this.duelJson = getGameData(wholeObject, game);
                 return true;
             }
             return false;

@@ -226,7 +226,8 @@ public class StatsTab extends GuiPlayerTabOverlay {
         List<NetworkPlayerInfo> visiblePlayers = playerList.subList(startIndex, endIndex);
         int visiblePlayerCount = visiblePlayers.size();
 
-        int headerFooterMaxWidth = Math.max(headerMaxWidth, footerMaxWidth);
+        int headerFooterPadding = 12;
+        int headerFooterMaxWidth = Math.max(headerMaxWidth, footerMaxWidth) + headerFooterPadding * 2;
         if (headerFooterMaxWidth > width) {
             width = headerFooterMaxWidth;
         }

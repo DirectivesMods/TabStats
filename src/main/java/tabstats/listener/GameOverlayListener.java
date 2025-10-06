@@ -84,8 +84,7 @@ public class GameOverlayListener {
         }
 
         int width = computeTabWidth(gameStatTitleList);
-        ScoreObjective objective = scoreboard.getObjectiveInDisplaySlot(0);
-        this.statsTab.renderNewPlayerlist(width, scoreboard, objective, gameStatTitleList, gamemode);
+        this.statsTab.renderNewPlayerlist(width, scoreboard, scoreboard.getObjectiveInDisplaySlot(0), gameStatTitleList, gamemode);
     }
 
     private String resolveGamemode(Scoreboard scoreboard) {
@@ -94,8 +93,7 @@ public class GameOverlayListener {
             return "BEDWARS";
         }
 
-        String displayName = sidebarObjective.getDisplayName();
-        String stripped = ChatColor.stripColor(displayName);
+        String stripped = ChatColor.stripColor(sidebarObjective.getDisplayName());
         if (stripped == null) {
             return "BEDWARS";
         }

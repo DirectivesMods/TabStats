@@ -37,17 +37,14 @@ public class HypixelAPI {
         if (apiKey == null || apiKey.trim().isEmpty()) {
             throw new InvalidKeyException();
         } else {
-            String requestURL = String.format("https://api.hypixel.net/v2/player?key=%s&uuid=%s", apiKey, uuid.replace("-", ""));
-            HttpGet request = new HttpGet(requestURL);
             try (CloseableHttpClient client = HttpClients.createDefault();
-                 CloseableHttpResponse response = client.execute(request)) {
+                 CloseableHttpResponse response = client.execute(new HttpGet(String.format("https://api.hypixel.net/v2/player?key=%s&uuid=%s", apiKey, uuid.replace("-", ""))))) {
                 if (response.getEntity() == null) {
                     return obj;
                 }
 
-                JsonParser parser = new JsonParser();
                 try (InputStreamReader reader = new InputStreamReader(response.getEntity().getContent(), StandardCharsets.UTF_8)) {
-                    obj = parser.parse(reader).getAsJsonObject();
+                    obj = new JsonParser().parse(reader).getAsJsonObject();
                 } catch (JsonSyntaxException ex) {
                     throw new BadJsonException();
                 }
@@ -95,17 +92,15 @@ public class HypixelAPI {
      */
     public static String getUUID(String name) {
         String uuid = "";
-        HttpGet request = new HttpGet(String.format("https://api.mojang.com/users/profiles/minecraft/%s", name));
         try (CloseableHttpClient client = HttpClients.createDefault();
-             CloseableHttpResponse response = client.execute(request)) {
+             CloseableHttpResponse response = client.execute(new HttpGet(String.format("https://api.mojang.com/users/profiles/minecraft/%s", name)))) {
             if (response.getEntity() == null) {
                 return uuid;
             }
 
             try (InputStream is = response.getEntity().getContent();
                  InputStreamReader reader = new InputStreamReader(is, StandardCharsets.UTF_8)) {
-                JsonParser jsonParser = new JsonParser();
-                JsonObject object = jsonParser.parse(reader).getAsJsonObject();
+                JsonObject object = new JsonParser().parse(reader).getAsJsonObject();
                 uuid = object.get("id").getAsString();
             } catch (NullPointerException ex) {
                 // Silently handle null pointer errors

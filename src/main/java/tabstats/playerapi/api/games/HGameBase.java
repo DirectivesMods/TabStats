@@ -126,10 +126,7 @@ public abstract class HGameBase extends HypixelAPI {
     }
 
     public String getFormattedFirstLogin() {
-        long unix_seconds = this.getFirstLogin();
-        Date date = new Date(unix_seconds);
-        SimpleDateFormat jdf = new SimpleDateFormat("MM-dd-yyyy");
-        return jdf.format(date);
+        return new SimpleDateFormat("MM-dd-yyyy").format(new Date(this.getFirstLogin()));
     }
 
     public String getFormattedNWL() {
@@ -162,15 +159,11 @@ public abstract class HGameBase extends HypixelAPI {
         if (int2 == 0) {
             return int1;
         }
-        double d;
-        double result = (double) int1 / (double) int2;
-        DecimalFormat format = new DecimalFormat("##.##");
-        String formattedString = format.format(result).replace(",", ".");
+        String formattedString = new DecimalFormat("##.##").format((double) int1 / (double) int2).replace(",", ".");
         try {
-            d = Double.parseDouble(formattedString);
+            return Double.parseDouble(formattedString);
         } catch (NumberFormatException e) {
-            d = int1;
+            return int1;
         }
-        return d;
     }
 }

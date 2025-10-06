@@ -41,10 +41,9 @@ public class Skywars extends SkywarsUtil {
         this.hasPlayed = false;
 
         try {
-            JsonObject obj = getGameData(wholeObject, game);
             if (!this.isNicked) {
                 this.hasPlayed = true;
-                this.skywarsJson = obj;
+                this.skywarsJson = getGameData(wholeObject, game);
                 return true;
             }
             return false;

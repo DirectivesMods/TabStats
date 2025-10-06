@@ -51,10 +51,9 @@ public class Bedwars extends BedwarsUtil {
         this.hasPlayed = false;
 
         try {
-            JsonObject obj = getGameData(wholeObject, game);
             if (!this.isNicked) {
                 this.hasPlayed = true;
-                this.bedwarsJson = obj;
+                this.bedwarsJson = getGameData(wholeObject, game);
                 return true;
             }
             return false;

@@ -82,9 +82,7 @@ public enum ChatColor {
         if (input == null)
             return null;
 
-        ChatColor[] colors = ChatColor.values();
-
-        for (ChatColor color : colors) {
+        for (ChatColor color : ChatColor.values()) {
             if (Character.toString(color.code).equalsIgnoreCase(input))
                 return color;
         }

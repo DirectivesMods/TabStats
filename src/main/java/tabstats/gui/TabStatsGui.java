@@ -25,26 +25,21 @@ public class TabStatsGui extends GuiScreen {
     public void initGui() {
         super.initGui();
         this.buttonList.clear();
-        int centerX = this.width / 2;
         this.titleY = this.height / 2 - 80;
         int toggleY = this.titleY + 20;
         int headerToggleY = toggleY + 24;
 
-        int fieldPadding = 10;
-        int desiredWidth = this.fontRendererObj.getStringWidth("WWWWWWWW-WWWW-WWWW-WWWW-WWWWWWWWWWWW") + fieldPadding;
-        this.fieldWidth = Math.max(220, desiredWidth);
-        this.fieldX = centerX - this.fieldWidth / 2;
+        this.fieldWidth = Math.max(220, this.fontRendererObj.getStringWidth("WWWWWWWW-WWWW-WWWW-WWWW-WWWWWWWWWWWW") + 10);
+        this.fieldX = this.width / 2 - this.fieldWidth / 2;
         this.fieldY = headerToggleY + 36;
         int buttonRowY = this.fieldY + 32;
 
         ModConfig cfg = ModConfig.getInstance();
 
-        boolean modEnabled = cfg.isModEnabled();
-        this.modToggleButton = new GuiButton(6, this.fieldX, toggleY, this.fieldWidth, 20, formatModToggleLabel(modEnabled));
+        this.modToggleButton = new GuiButton(6, this.fieldX, toggleY, this.fieldWidth, 20, formatModToggleLabel(cfg.isModEnabled()));
         this.buttonList.add(this.modToggleButton);
 
-        boolean headerFooterEnabled = cfg.isRenderHeaderFooterEnabled();
-        this.headerFooterButton = new GuiButton(5, this.fieldX, headerToggleY, this.fieldWidth, 20, formatHeaderFooterLabel(headerFooterEnabled));
+        this.headerFooterButton = new GuiButton(5, this.fieldX, headerToggleY, this.fieldWidth, 20, formatHeaderFooterLabel(cfg.isRenderHeaderFooterEnabled()));
         this.buttonList.add(this.headerFooterButton);
 
         this.apiField = new MaskedGuiTextField(3, this.fontRendererObj, this.fieldX, this.fieldY, this.fieldWidth, 20);
@@ -54,8 +49,7 @@ public class TabStatsGui extends GuiScreen {
         this.showingApiKey = false;
         this.apiField.setRevealing(this.showingApiKey);
 
-        int showButtonX = this.fieldX + this.fieldWidth + 10;
-        this.buttonList.add(new GuiButton(4, showButtonX, this.fieldY, 60, 20, "Show"));
+        this.buttonList.add(new GuiButton(4, this.fieldX + this.fieldWidth + 10, this.fieldY, 60, 20, "Show"));
 
         int buttonSpacing = 6;
         int actionButtonWidth = (this.fieldWidth - buttonSpacing * 2) / 3;

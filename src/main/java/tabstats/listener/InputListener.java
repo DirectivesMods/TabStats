@@ -40,7 +40,6 @@ public class InputListener {
             return;
         }
 
-        int playerCount = mc.getNetHandler().getPlayerInfoMap().size();
-        statsTab.handleMouseWheel(event.dwheel, playerCount);
+        statsTab.handleMouseWheel(event.dwheel, mc.getNetHandler().getPlayerInfoMap().size());
     }
 }

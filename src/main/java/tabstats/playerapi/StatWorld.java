@@ -63,9 +63,8 @@ public class StatWorld {
         statAssembly.clear();
         
         // Preserve existence tracking for cached players to avoid 5-second delays
-        Set<UUID> preservedUUIDs = new HashSet<>(worldPlayers.keySet());
         existedMoreThan5Seconds.clear();
-        existedMoreThan5Seconds.addAll(preservedUUIDs);
+        existedMoreThan5Seconds.addAll(worldPlayers.keySet());
         
         // The actual re-rendering logic happens in WorldLoader.onTick():
         // - Cached players display immediately
@@ -184,11 +183,11 @@ public class StatWorld {
                 hPlayer.setPlayerName(playerObject.get("displayname").getAsString());
                 registerAlias(hPlayer, hPlayer.getPlayerName());
 
-                Bedwars bw = new Bedwars(playerName, playerUUID, wholeObject);
-                Duels duels = new Duels(playerName, playerUUID, wholeObject);
-                Skywars sw = new Skywars(playerName, playerUUID, wholeObject);
-
-                hPlayer.addGames(bw, duels, sw);
+                hPlayer.addGames(
+                        new Bedwars(playerName, playerUUID, wholeObject),
+                        new Duels(playerName, playerUUID, wholeObject),
+                        new Skywars(playerName, playerUUID, wholeObject)
+                );
                 apiSuccess = true;
                 
             } catch (PlayerNullException | ApiRequestException | InvalidKeyException | BadJsonException ex) {
@@ -230,8 +229,6 @@ public class StatWorld {
                 
                 // Real UUID (v4 or v2) but API failed - use exponential backoff for API issues
                 if (apiRetryAttempt < 8) { // 0-7 = 8 attempts total
-                    long delayMs = apiRetryAttempt == 0 ? 0 : Math.round(250 * Math.pow(2, apiRetryAttempt - 1));
-
                     // Schedule retry with exponential backoff
                     Handler.asExecutor(() -> {
                         if (!ModConfig.getInstance().isModEnabled()) {
@@ -239,7 +236,7 @@ public class StatWorld {
                             return;
                         }
                         try {
-                            Thread.sleep(delayMs);
+                            Thread.sleep(apiRetryAttempt == 0 ? 0 : Math.round(250 * Math.pow(2, apiRetryAttempt - 1)));
                             fetchStatsWithRetry(entityPlayer, apiRetryAttempt + 1);
                         } catch (InterruptedException e) {
                             Thread.currentThread().interrupt();
