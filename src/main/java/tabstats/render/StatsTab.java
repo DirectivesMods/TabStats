@@ -184,14 +184,14 @@ public class StatsTab extends GuiPlayerTabOverlay {
         int headerMaxWidth = 0;
         if (headerLines != null) {
             for (String line : headerLines) {
-                headerMaxWidth = Math.max(headerMaxWidth, this.mc.fontRendererObj.getStringWidth(ChatColor.stripColor(line)));
+                headerMaxWidth = Math.max(headerMaxWidth, this.mc.fontRendererObj.getStringWidth(line));
             }
         }
 
         int footerMaxWidth = 0;
         if (footerLines != null) {
             for (String line : footerLines) {
-                footerMaxWidth = Math.max(footerMaxWidth, this.mc.fontRendererObj.getStringWidth(ChatColor.stripColor(line)));
+                footerMaxWidth = Math.max(footerMaxWidth, this.mc.fontRendererObj.getStringWidth(line));
             }
         }
 
@@ -206,7 +206,7 @@ public class StatsTab extends GuiPlayerTabOverlay {
         if (scoreObjectiveIn != null) {
             objectiveName = WordUtils.capitalize(scoreObjectiveIn.getDisplayName().replace("_", ""));
         }
-        int objectiveLabelWidth = objectiveName.isEmpty() ? 0 : 5 + this.mc.fontRendererObj.getStringWidth(ChatColor.stripColor(objectiveName));
+        int objectiveLabelWidth = objectiveName.isEmpty() ? 0 : 5 + this.mc.fontRendererObj.getStringWidth(objectiveName);
 
         playerList = playerList.subList(0, Math.min(playerList.size(), MAX_TAB_PLAYERS));
         int playerListSize = playerList.size();
@@ -226,8 +226,7 @@ public class StatsTab extends GuiPlayerTabOverlay {
         List<NetworkPlayerInfo> visiblePlayers = playerList.subList(startIndex, endIndex);
         int visiblePlayerCount = visiblePlayers.size();
 
-        int headerFooterPadding = 12;
-        int headerFooterMaxWidth = Math.max(headerMaxWidth, footerMaxWidth) + headerFooterPadding * 2;
+        int headerFooterMaxWidth = Math.max(headerMaxWidth, footerMaxWidth);
         if (headerFooterMaxWidth > width) {
             width = headerFooterMaxWidth;
         }
