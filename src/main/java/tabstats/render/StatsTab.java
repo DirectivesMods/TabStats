@@ -112,11 +112,8 @@ public class StatsTab extends GuiPlayerTabOverlay {
             availableHeight = 0;
         }
 
-        // Each player entry takes entryHeight + 1 pixel spacing
-        int entryTotalHeight = this.entryHeight + 1;
-
         // Calculate how many complete entries fit, minimum 1
-        return Math.max(1, availableHeight / entryTotalHeight);
+        return Math.max(1, availableHeight / (this.entryHeight + 1));
     }
     
     /**
@@ -151,12 +148,10 @@ public class StatsTab extends GuiPlayerTabOverlay {
         }
 
         // Scroll by 1 player per wheel notch
-        int scrollDirection = wheelDelta > 0 ? -1 : 1;
-        targetScrollOffset += scrollDirection;
+        targetScrollOffset += wheelDelta > 0 ? -1 : 1;
 
         // Clamp to valid bounds derived from the last rendered list size
-        float maxScroll = Math.max(0, effectiveListSize - maxVisiblePlayers);
-        targetScrollOffset = MathHelper.clamp_float(targetScrollOffset, 0, maxScroll);
+        targetScrollOffset = MathHelper.clamp_float(targetScrollOffset, 0, Math.max(0, effectiveListSize - maxVisiblePlayers));
     }
     
     /**
@@ -173,7 +168,6 @@ public class StatsTab extends GuiPlayerTabOverlay {
         List<NetworkPlayerInfo> playerList = collectEligiblePlayers(netHandler, statWorld);
 
         ScaledResolution scaledRes = new ScaledResolution(this.mc);
-        int centerX = scaledRes.getScaledWidth() / 2;
         int baseY = 20;
         int fontHeight = this.mc.fontRendererObj.FONT_HEIGHT;
 
@@ -190,30 +184,29 @@ public class StatsTab extends GuiPlayerTabOverlay {
         int headerMaxWidth = 0;
         if (headerLines != null) {
             for (String line : headerLines) {
-                headerMaxWidth = Math.max(headerMaxWidth, this.mc.fontRendererObj.getStringWidth(line));
+                headerMaxWidth = Math.max(headerMaxWidth, this.mc.fontRendererObj.getStringWidth(ChatColor.stripColor(line)));
             }
         }
 
         int footerMaxWidth = 0;
         if (footerLines != null) {
             for (String line : footerLines) {
-                footerMaxWidth = Math.max(footerMaxWidth, this.mc.fontRendererObj.getStringWidth(line));
+                footerMaxWidth = Math.max(footerMaxWidth, this.mc.fontRendererObj.getStringWidth(ChatColor.stripColor(line)));
             }
         }
 
-        int headerSpacing = headerHeight > 0 ? 1 : 0;
         int footerSpacing = footerHeight > 0 ? 1 : 0;
 
         int startingY = baseY + headerHeight;
         if (headerHeight > 0) {
-            startingY += headerSpacing;
+            startingY += 1;
         }
 
         String objectiveName = "";
         if (scoreObjectiveIn != null) {
-            String objectiveDisplayName = WordUtils.capitalize(scoreObjectiveIn.getDisplayName().replace("_", ""));
-            objectiveName = objectiveDisplayName;
+            objectiveName = WordUtils.capitalize(scoreObjectiveIn.getDisplayName().replace("_", ""));
         }
+        int objectiveLabelWidth = objectiveName.isEmpty() ? 0 : 5 + this.mc.fontRendererObj.getStringWidth(ChatColor.stripColor(objectiveName));
 
         playerList = playerList.subList(0, Math.min(playerList.size(), MAX_TAB_PLAYERS));
         int playerListSize = playerList.size();
@@ -221,8 +214,7 @@ public class StatsTab extends GuiPlayerTabOverlay {
 
         this.maxVisiblePlayers = calculateMaxVisiblePlayers(scaledRes, startingY, footerHeight, footerSpacing);
 
-        float maxScroll = Math.max(0, playerListSize - maxVisiblePlayers);
-        targetScrollOffset = MathHelper.clamp_float(targetScrollOffset, 0.0f, maxScroll);
+        targetScrollOffset = MathHelper.clamp_float(targetScrollOffset, 0.0f, Math.max(0, playerListSize - maxVisiblePlayers));
         if (scrollOffset < 0.0f) {
             scrollOffset = 0.0f;
         }
@@ -234,34 +226,41 @@ public class StatsTab extends GuiPlayerTabOverlay {
         List<NetworkPlayerInfo> visiblePlayers = playerList.subList(startIndex, endIndex);
         int visiblePlayerCount = visiblePlayers.size();
 
-        int adjustedWidth = Math.max(width, Math.max(headerMaxWidth, footerMaxWidth));
-        if (adjustedWidth != width) {
-            width = adjustedWidth;
+        int headerFooterMaxWidth = Math.max(headerMaxWidth, footerMaxWidth);
+        if (headerFooterMaxWidth > width) {
+            width = headerFooterMaxWidth;
         }
 
-        int startingX = centerX - width / 2;
+        int totalContentWidth = width + objectiveLabelWidth;
+        int leftBound = scaledRes.getScaledWidth() / 2 - totalContentWidth / 2;
+        int startingX = leftBound + objectiveLabelWidth;
+        int contentRight = startingX + width;
 
         int textBaselineOffset = this.entryHeight / 2 - 4;
-        int backgroundLeft = startingX - this.backgroundBorderSize - (objectiveName.isEmpty() ? 0 : 5 + this.mc.fontRendererObj.getStringWidth(objectiveName));
-        int backgroundRight = centerX + width / 2 + this.backgroundBorderSize;
-        int backgroundTop = baseY - this.backgroundBorderSize;
         int playerSectionHeight = (visiblePlayerCount + 1) * (this.entryHeight + 1);
-        int backgroundBottom = startingY + playerSectionHeight - 1 + footerSpacing + footerHeight + this.backgroundBorderSize;
-        drawRect(backgroundLeft, backgroundTop, backgroundRight, backgroundBottom, Integer.MIN_VALUE);
+        drawRect(
+                leftBound - this.backgroundBorderSize,
+                baseY - this.backgroundBorderSize,
+                leftBound + totalContentWidth + this.backgroundBorderSize,
+                startingY + playerSectionHeight - 1 + footerSpacing + footerHeight + this.backgroundBorderSize,
+                Integer.MIN_VALUE
+        );
 
-        drawRect(startingX, startingY, centerX + width / 2, startingY + this.entryHeight, 553648127);
+        drawRect(startingX, startingY, contentRight, startingY + this.entryHeight, 553648127);
+
+        int contentCenterX = leftBound + totalContentWidth / 2;
 
         if (headerLineCount > 0 && headerLines != null) {
             int headerY = baseY;
             for (String line : headerLines) {
-                this.drawCenteredString(this.mc.fontRendererObj, line, centerX, headerY, ChatColor.WHITE.getRGB());
+                this.drawCenteredString(this.mc.fontRendererObj, line, contentCenterX, headerY, ChatColor.WHITE.getRGB());
                 headerY += fontHeight;
             }
         }
 
         int statXSpacer = startingX + headSize + 2;
         this.mc.fontRendererObj.drawStringWithShadow(ChatColor.BOLD + "NAME", statXSpacer, startingY + textBaselineOffset, ChatColor.WHITE.getRGB());
-        this.mc.fontRendererObj.drawStringWithShadow(objectiveName, startingX - (this.mc.fontRendererObj.getStringWidth(objectiveName) + 5), startingY + textBaselineOffset, ChatColor.WHITE.getRGB());
+        this.mc.fontRendererObj.drawStringWithShadow(objectiveName, startingX - objectiveLabelWidth, startingY + textBaselineOffset, ChatColor.WHITE.getRGB());
 
         statXSpacer += this.mc.fontRendererObj.getStringWidth(ChatColor.BOLD + "[YOUTUBE] WWWWWWWWWWWWWWWW") + 10;
 
@@ -272,23 +271,22 @@ public class StatsTab extends GuiPlayerTabOverlay {
             statXSpacer += this.mc.fontRendererObj.getStringWidth(ChatColor.BOLD + statLabel) + 10;
         }
 
-        int ySpacer = startingY + this.entryHeight + 1;
-        int headerBottomY = ySpacer;
+        int headerBottomY = startingY + this.entryHeight + 1;
+        int ySpacer = headerBottomY;
 
-        float fractionalOffset = MathHelper.clamp_float(scrollOffset - startIndex, 0.0f, 0.999f);
-        int smoothScrollPixels = (int)(fractionalOffset * (this.entryHeight + 1));
-        ySpacer -= smoothScrollPixels;
-
-        int scaleFactor = scaledRes.getScaleFactor();
-        int scissorWidth = scaledRes.getScaledWidth() * scaleFactor;
-        int scissorHeight = (scaledRes.getScaledHeight() - headerBottomY) * scaleFactor;
+        ySpacer -= (int)(MathHelper.clamp_float(scrollOffset - startIndex, 0.0f, 0.999f) * (this.entryHeight + 1));
 
         GL11.glEnable(GL11.GL_SCISSOR_TEST);
-        GL11.glScissor(0, 0, scissorWidth, scissorHeight);
+        GL11.glScissor(
+                0,
+                0,
+                scaledRes.getScaledWidth() * scaledRes.getScaleFactor(),
+                (scaledRes.getScaledHeight() - headerBottomY) * scaledRes.getScaleFactor()
+        );
 
         for (NetworkPlayerInfo playerInfo : visiblePlayers) {
             int xSpacer = startingX;
-            drawRect(xSpacer, ySpacer, centerX + width / 2, ySpacer + this.entryHeight, 553648127);
+            drawRect(xSpacer, ySpacer, contentRight, ySpacer + this.entryHeight, 553648127);
 
             GlStateManager.color(1.0F, 1.0F, 1.0F, 1.0F);
             GlStateManager.enableAlpha();
@@ -298,8 +296,7 @@ public class StatsTab extends GuiPlayerTabOverlay {
             String name = this.getPlayerName(playerInfo);
             GameProfile gameProfile = playerInfo.getGameProfile();
 
-            boolean renderSkin = this.mc.isIntegratedServerRunning() || this.mc.getNetHandler().getNetworkManager().getIsencrypted();
-            if (renderSkin && playerInfo.getLocationSkin() != null) {
+            if ((this.mc.isIntegratedServerRunning() || this.mc.getNetHandler().getNetworkManager().getIsencrypted()) && playerInfo.getLocationSkin() != null) {
                 EntityPlayer entityPlayer = this.mc.theWorld.getPlayerEntityByUUID(gameProfile.getId());
                 boolean upsideDown = entityPlayer != null && entityPlayer.isWearing(EnumPlayerModelParts.CAPE) && ("Dinnerbone".equals(gameProfile.getName()) || "Grumm".equals(gameProfile.getName()));
                 this.mc.getTextureManager().bindTexture(playerInfo.getLocationSkin());
@@ -315,14 +312,16 @@ public class StatsTab extends GuiPlayerTabOverlay {
             xSpacer += headSize + 2;
 
             if (playerInfo.getGameType() != WorldSettings.GameType.SPECTATOR) {
-                String displayName = playerInfo.getDisplayName() != null ? playerInfo.getDisplayName().getFormattedText() : null;
-                HPlayer hPlayer = statWorld == null ? null : statWorld.getPlayerByIdentity(gameProfile.getId(), displayName, gameProfile.getName());
+                HPlayer hPlayer = statWorld == null ? null : statWorld.getPlayerByIdentity(
+                        gameProfile.getId(),
+                        playerInfo.getDisplayName() != null ? playerInfo.getDisplayName().getFormattedText() : null,
+                        gameProfile.getName()
+                );
                 if (hPlayer != null) {
                     if (hPlayer.isNicked()) {
                         name = this.getHPlayerName(playerInfo, hPlayer);
                     } else {
-                        boolean obfuscated = name.contains(ChatColor.OBFUSCATE.toString());
-                        if (obfuscated) {
+                        if (name.contains(ChatColor.OBFUSCATE.toString())) {
                             ScorePlayerTeam liveTeam = playerInfo.getPlayerTeam();
                             String teamPrefix = liveTeam != null ? liveTeam.getColorPrefix() : "";
                             String color = teamPrefix.isEmpty() ? hPlayer.getPlayerRankColor() : teamPrefix;
@@ -371,24 +370,26 @@ public class StatsTab extends GuiPlayerTabOverlay {
         GL11.glDisable(GL11.GL_SCISSOR_TEST);
 
         if (playerListSize > maxVisiblePlayers) {
-            int indicatorX = centerX + width / 2 - 10;
+            int indicatorX = contentRight - 10;
 
             if (startIndex > 0) {
-                String upArrow = ChatColor.WHITE + "▲";
-                this.mc.fontRendererObj.drawStringWithShadow(upArrow, indicatorX, startingY + this.entryHeight + 2, ChatColor.WHITE.getRGB());
+                this.mc.fontRendererObj.drawStringWithShadow(ChatColor.WHITE + "▲", indicatorX, startingY + this.entryHeight + 2, ChatColor.WHITE.getRGB());
             }
 
             if (endIndex < playerListSize) {
-                String downArrow = ChatColor.WHITE + "▼";
-                int downY = startingY + this.entryHeight + 1 + (visiblePlayerCount * (this.entryHeight + 1)) - 10;
-                this.mc.fontRendererObj.drawStringWithShadow(downArrow, indicatorX, downY, ChatColor.WHITE.getRGB());
+                this.mc.fontRendererObj.drawStringWithShadow(
+                        ChatColor.WHITE + "▼",
+                        indicatorX,
+                        startingY + this.entryHeight + 1 + (visiblePlayerCount * (this.entryHeight + 1)) - 10,
+                        ChatColor.WHITE.getRGB()
+                );
             }
         }
 
         if (footerLineCount > 0 && footerLines != null) {
             int footerY = startingY + playerSectionHeight + footerSpacing;
             for (String line : footerLines) {
-                this.drawCenteredString(this.mc.fontRendererObj, line, centerX, footerY, ChatColor.WHITE.getRGB());
+                this.drawCenteredString(this.mc.fontRendererObj, line, contentCenterX, footerY, ChatColor.WHITE.getRGB());
                 footerY += fontHeight;
             }
         }
@@ -495,14 +496,18 @@ public class StatsTab extends GuiPlayerTabOverlay {
                     }
                 } else {
                     float f1 = MathHelper.clamp_float((float)i / 20.0F, 0.0F, 1.0F);
-                    int i1 = (int)((1.0F - f1) * 255.0F) << 16 | (int)(f1 * 255.0F) << 8;
                     String s = "" + (float)i / 2.0F;
 
                     if (endX - this.mc.fontRendererObj.getStringWidth(s + "hp") >= startX) {
                         s = s + "hp";
                     }
 
-                    this.mc.fontRendererObj.drawStringWithShadow(s, (float)((endX + startX) / 2 - this.mc.fontRendererObj.getStringWidth(s) / 2), (float)y, i1);
+                    this.mc.fontRendererObj.drawStringWithShadow(
+                            s,
+                            (float)((endX + startX) / 2 - this.mc.fontRendererObj.getStringWidth(s) / 2),
+                            (float)y,
+                            (int)((1.0F - f1) * 255.0F) << 16 | (int)(f1 * 255.0F) << 8
+                    );
                 }
             }
         } else {
