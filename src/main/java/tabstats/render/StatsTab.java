@@ -174,7 +174,6 @@ public class StatsTab extends GuiPlayerTabOverlay {
 
         ScaledResolution scaledRes = new ScaledResolution(this.mc);
         int centerX = scaledRes.getScaledWidth() / 2;
-        int startingX = centerX - width / 2;
         int baseY = 20;
         int fontHeight = this.mc.fontRendererObj.FONT_HEIGHT;
 
@@ -187,6 +186,20 @@ public class StatsTab extends GuiPlayerTabOverlay {
         String[] footerLines = footerComponent != null ? StringUtils.splitPreserveAllTokens(footerComponent.getFormattedText(), '\n') : null;
         int footerLineCount = footerLines != null ? footerLines.length : 0;
         int footerHeight = footerLineCount * fontHeight;
+
+        int headerMaxWidth = 0;
+        if (headerLines != null) {
+            for (String line : headerLines) {
+                headerMaxWidth = Math.max(headerMaxWidth, this.mc.fontRendererObj.getStringWidth(line));
+            }
+        }
+
+        int footerMaxWidth = 0;
+        if (footerLines != null) {
+            for (String line : footerLines) {
+                footerMaxWidth = Math.max(footerMaxWidth, this.mc.fontRendererObj.getStringWidth(line));
+            }
+        }
 
         int headerSpacing = headerHeight > 0 ? 1 : 0;
         int footerSpacing = footerHeight > 0 ? 1 : 0;
@@ -220,6 +233,13 @@ public class StatsTab extends GuiPlayerTabOverlay {
         int endIndex = Math.min(playerListSize, startIndex + maxVisiblePlayers);
         List<NetworkPlayerInfo> visiblePlayers = playerList.subList(startIndex, endIndex);
         int visiblePlayerCount = visiblePlayers.size();
+
+        int adjustedWidth = Math.max(width, Math.max(headerMaxWidth, footerMaxWidth));
+        if (adjustedWidth != width) {
+            width = adjustedWidth;
+        }
+
+        int startingX = centerX - width / 2;
 
         int textBaselineOffset = this.entryHeight / 2 - 4;
         int backgroundLeft = startingX - this.backgroundBorderSize - (objectiveName.isEmpty() ? 0 : 5 + this.mc.fontRendererObj.getStringWidth(objectiveName));
@@ -279,7 +299,7 @@ public class StatsTab extends GuiPlayerTabOverlay {
             GameProfile gameProfile = playerInfo.getGameProfile();
 
             boolean renderSkin = this.mc.isIntegratedServerRunning() || this.mc.getNetHandler().getNetworkManager().getIsencrypted();
-            if (renderSkin) {
+            if (renderSkin && playerInfo.getLocationSkin() != null) {
                 EntityPlayer entityPlayer = this.mc.theWorld.getPlayerEntityByUUID(gameProfile.getId());
                 boolean upsideDown = entityPlayer != null && entityPlayer.isWearing(EnumPlayerModelParts.CAPE) && ("Dinnerbone".equals(gameProfile.getName()) || "Grumm".equals(gameProfile.getName()));
                 this.mc.getTextureManager().bindTexture(playerInfo.getLocationSkin());
@@ -290,9 +310,9 @@ public class StatsTab extends GuiPlayerTabOverlay {
                 if (entityPlayer != null && entityPlayer.isWearing(EnumPlayerModelParts.HAT)) {
                     Gui.drawScaledCustomSizeModalRect(xSpacer, ySpacer, 40.0F, u, 8, v, headSize, headSize, 64.0F, 64.0F);
                 }
-
-                xSpacer += headSize + 2;
             }
+
+            xSpacer += headSize + 2;
 
             if (playerInfo.getGameType() != WorldSettings.GameType.SPECTATOR) {
                 String displayName = playerInfo.getDisplayName() != null ? playerInfo.getDisplayName().getFormattedText() : null;

@@ -152,8 +152,7 @@ public class TabStatsGui extends GuiScreen {
             }
 
             if (Minecraft.getMinecraft().thePlayer != null) {
-                String status = newValue ? ChatColor.GREEN + "Enabled" : ChatColor.RED + "Disabled";
-                Minecraft.getMinecraft().thePlayer.addChatMessage(new ChatComponentText(ChatColor.GREEN + "[TabStats] " + ChatColor.WHITE + "Mod " + status + ChatColor.WHITE + "."));
+                Minecraft.getMinecraft().thePlayer.addChatMessage(new ChatComponentText(ChatColor.GREEN + "[TabStats] " + ChatColor.WHITE + "Mod " + (newValue ? "enabled." : "disabled.")));
             }
         }
     }
