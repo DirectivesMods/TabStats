@@ -186,7 +186,6 @@ public abstract class BedwarsUtil extends HGameBase {
         putMono(700, ChatColor.LIGHT_PURPLE);
         putMono(800, ChatColor.BLUE);
         putMono(900, ChatColor.DARK_PURPLE);
-
         PRESTIGE_STYLES.put(1000, new PrestigeStyle(new ChatColor[]{ChatColor.GOLD, ChatColor.YELLOW, ChatColor.GREEN, ChatColor.AQUA}, ChatColor.LIGHT_PURPLE));
         PRESTIGE_STYLES.put(1100, mono(ChatColor.WHITE, ChatColor.GRAY));
         PRESTIGE_STYLES.put(1200, mono(ChatColor.YELLOW, ChatColor.GOLD));
