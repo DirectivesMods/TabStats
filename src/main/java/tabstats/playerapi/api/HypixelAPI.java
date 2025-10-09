@@ -3,6 +3,7 @@ package tabstats.playerapi.api;
 import tabstats.config.ModConfig;
 import tabstats.playerapi.api.games.HypixelGames;
 import tabstats.playerapi.exception.*;
+import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
 import com.google.gson.JsonParser;
 import com.google.gson.JsonSyntaxException;
@@ -78,14 +79,39 @@ public class HypixelAPI {
                     EntityUtils.consumeQuietly(entity);
                 }
 
-                if (obj.get("player") == null) {
-                    if (obj.get("cause").getAsString().equalsIgnoreCase("Invalid API key")) throw new InvalidKeyException();
+                boolean throttle = obj.has("throttle") && obj.get("throttle").getAsBoolean();
+                boolean globalThrottle = obj.has("global") && obj.get("global").getAsBoolean();
+                String cause = "";
+
+                if (obj.has("cause") && !obj.get("cause").isJsonNull()) {
+                    try {
+                        cause = obj.get("cause").getAsString();
+                    } catch (UnsupportedOperationException ignored) {
+                        cause = "";
+                    }
+                }
+
+                boolean success = obj.has("success") && obj.get("success").getAsBoolean();
+                if (!success) {
+                    if (throttle || globalThrottle) {
+                        throw new ApiThrottleException(globalThrottle);
+                    }
+                    if ("Invalid API key".equalsIgnoreCase(cause)) {
+                        throw new InvalidKeyException();
+                    }
+                    throw cause.isEmpty() ? new ApiRequestException() : new ApiRequestException(cause);
+                }
+
+                JsonElement playerElement = obj.get("player");
+                if (playerElement == null || playerElement.isJsonNull()) {
+                    if (throttle || globalThrottle) {
+                        throw new ApiThrottleException(globalThrottle);
+                    }
+                    if ("Invalid API key".equalsIgnoreCase(cause)) {
+                        throw new InvalidKeyException();
+                    }
                     throw new PlayerNullException();
                 }
-                else if (obj.get("player").toString().equalsIgnoreCase("null"))
-                    throw new PlayerNullException();
-                else if (obj.get("success").getAsString().equals("false"))
-                    throw new ApiRequestException();
             } catch (IOException ex) {
                 // Silently handle IO errors
             }

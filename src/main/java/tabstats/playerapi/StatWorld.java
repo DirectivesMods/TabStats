@@ -6,6 +6,7 @@ import tabstats.playerapi.api.games.bedwars.Bedwars;
 import tabstats.playerapi.api.games.duels.Duels;
 import tabstats.playerapi.api.games.skywars.Skywars;
 import tabstats.playerapi.exception.ApiRequestException;
+import tabstats.playerapi.exception.ApiThrottleException;
 import tabstats.playerapi.exception.BadJsonException;
 import tabstats.playerapi.exception.InvalidKeyException;
 import tabstats.playerapi.exception.PlayerNullException;
@@ -172,6 +173,8 @@ public class StatWorld {
             // Fire API call; nick status is inferred instantly from UUID version (v1 = nicked)
             boolean apiSuccess = false;
             Exception apiException = null;
+            boolean throttleTriggered = false;
+            boolean globalThrottle = false;
             int uuidVersion = uuid.version();
             
             // 1. Attempt API call
@@ -190,6 +193,11 @@ public class StatWorld {
                 );
                 apiSuccess = true;
                 
+            } catch (ApiThrottleException ex) {
+                apiSuccess = false;
+                apiException = ex;
+                throttleTriggered = true;
+                globalThrottle = ex.isGlobal();
             } catch (PlayerNullException | ApiRequestException | InvalidKeyException | BadJsonException ex) {
                 apiSuccess = false;
                 apiException = ex;
@@ -215,6 +223,27 @@ public class StatWorld {
 
             // 4. API failed - handle based on nick uncertainty
             if (!apiSuccess) {
+                if (throttleTriggered) {
+                    if (apiRetryAttempt < 8) {
+                        long baseDelay = globalThrottle ? 5_000L : 2_000L;
+                        long delay = baseDelay * Math.max(1, apiRetryAttempt + 1);
+                        Handler.asExecutor(() -> {
+                            if (!ModConfig.getInstance().isModEnabled()) {
+                                this.statAssembly.remove(entityPlayer.getUniqueID());
+                                return;
+                            }
+                            try {
+                                Thread.sleep(delay);
+                                fetchStatsWithRetry(entityPlayer, apiRetryAttempt + 1);
+                            } catch (InterruptedException e) {
+                                Thread.currentThread().interrupt();
+                            }
+                        });
+                        return;
+                    }
+                    throttleTriggered = false; // fall through to cache fallback below
+                }
+
                 if (uuidVersion == 2 && apiException instanceof PlayerNullException) {
                     // Version 2 UUIDs with no API data are lobby bots/spoofs - leave in statAssembly so we don't re-fetch
                     removeAliases(hPlayer);
