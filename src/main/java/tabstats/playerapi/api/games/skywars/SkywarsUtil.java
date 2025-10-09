@@ -71,14 +71,4 @@ public abstract class SkywarsUtil extends HGameBase {
         return ChatColor.DARK_PURPLE;
     }
 
-    public ChatColor getWSColor(int ws) {
-        if (ws < 5) return ChatColor.GRAY;
-        if (ws < 10) return ChatColor.WHITE;
-        if (ws < 20) return ChatColor.GOLD;
-        if (ws < 35) return ChatColor.DARK_GREEN;
-        if (ws < 50) return ChatColor.RED;
-        if (ws < 75) return ChatColor.DARK_RED;
-        if (ws < 100) return ChatColor.LIGHT_PURPLE;
-        return ChatColor.DARK_PURPLE;
-    }
 }

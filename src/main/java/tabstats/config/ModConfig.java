@@ -9,14 +9,14 @@ import java.io.File;
 import java.io.FileReader;
 import java.io.FileWriter;
 import java.io.Writer;
-import java.util.HashMap;
+import java.util.LinkedHashMap;
 
 import static tabstats.config.ModConfigNames.APIKEY;
 import static tabstats.config.ModConfigNames.RENDER_HEADER_FOOTER;
 import static tabstats.config.ModConfigNames.MOD_ENABLED;
 
 public class ModConfig {
-    private static final String CONFIG_FILENAME = "settings.json";
+    private static final String CONFIG_FILENAME = "config.json";
     private String apiKey;
     private String lastApiKey; // Track the last API key to detect changes
     private static ModConfig instance;
@@ -114,9 +114,9 @@ public class ModConfig {
         try {
             if (file.createNewFile()) {
                 JsonObject defaults = new JsonObject();
-                defaults.addProperty(APIKEY.toString(), "");
-                defaults.addProperty(RENDER_HEADER_FOOTER.toString(), true);
                 defaults.addProperty(MOD_ENABLED.toString(), true);
+                defaults.addProperty(RENDER_HEADER_FOOTER.toString(), true);
+                defaults.addProperty(APIKEY.toString(), "");
 
                 try (FileWriter writer = new FileWriter(file)) {
                     Handler.getGson().toJson(defaults, writer);
@@ -171,10 +171,10 @@ public class ModConfig {
     }
 
     public void save() {
-        HashMap<String, Object> map = new HashMap<>();
-        map.put(APIKEY.toString(), this.apiKey == null ? "" : this.apiKey); // Use the internal field, not getApiKey()
-        map.put(RENDER_HEADER_FOOTER.toString(), this.renderHeaderFooter);
+        LinkedHashMap<String, Object> map = new LinkedHashMap<>();
         map.put(MOD_ENABLED.toString(), this.modEnabled);
+        map.put(RENDER_HEADER_FOOTER.toString(), this.renderHeaderFooter);
+        map.put(APIKEY.toString(), this.apiKey == null ? "" : this.apiKey); // Use the internal field, not getApiKey()
         File file = getFile();
         try (Writer writer = new FileWriter(file)) {
             Handler.getGson().toJson(map, writer);

@@ -2,7 +2,6 @@ package tabstats.config;
 
 public enum ModConfigNames {
     APIKEY("ApiKey"),
-    VERSION("Version"),
     RENDER_HEADER_FOOTER("RenderHeaderFooter"),
     MOD_ENABLED("ModEnabled");
 

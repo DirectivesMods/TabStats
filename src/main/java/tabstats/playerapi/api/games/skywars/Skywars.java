@@ -15,15 +15,13 @@ public class Skywars extends SkywarsUtil {
     public JsonObject skywarsJson;
     private final JsonObject wholeObject;
     private List<Stat> statList;
-    private final List<Stat> formattedStatList;
-    public Stat wins, losses, kills, deaths, star, experience, levelFormatted;
+    public Stat wins, losses, kills, deaths;
 
     public Skywars(String playerName, String playerUUID, JsonObject wholeObject) {
         super(playerName, playerUUID);
         this.wholeObject = wholeObject;
         this.playerObject = wholeObject.get("player").getAsJsonObject();
         this.statList = new ArrayList<>();
-        this.formattedStatList = new ArrayList<>();
 
         if (setData(HypixelGames.SKYWARS)) {
             this.statList = setStats(
@@ -69,7 +67,7 @@ public class Skywars extends SkywarsUtil {
 
     @Override
     public List<Stat> getFormattedStatList() {
-        List<Stat> list = new ArrayList<>(this.formattedStatList);
+        List<Stat> list = new ArrayList<>();
 
         // If player has no stats, return empty list so they show only their name
         if (!this.hasPlayed || this.skywarsJson == null) {
@@ -108,7 +106,9 @@ public class Skywars extends SkywarsUtil {
         list.add(wins);
 
         return list;
-    }    @Override
+    }
+
+    @Override
     public void setFormattedStatList() {
         // no-op; we assemble in getFormattedStatList for consistency
     }

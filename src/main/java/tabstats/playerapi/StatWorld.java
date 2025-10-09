@@ -131,8 +131,15 @@ public class StatWorld {
 
     public HPlayer getPlayerByName(String name) {
         for (Map.Entry<UUID,HPlayer> playerEntry : this.worldPlayers.entrySet()) {
-            if (playerEntry.getValue().getNickname().equalsIgnoreCase(name))
+            HPlayer player = playerEntry.getValue();
+            if (player == null) {
+                continue;
+            }
+
+            String candidate = player.getPlayerName();
+            if (candidate != null && candidate.equalsIgnoreCase(name)) {
                 return playerEntry.getValue();
+            }
         }
 
         return null;

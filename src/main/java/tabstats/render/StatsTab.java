@@ -73,10 +73,6 @@ public class StatsTab extends GuiPlayerTabOverlay {
         this.renderHeaderFooter = renderHeaderFooterIn;
     }
 
-    public boolean shouldRenderHeaderFooter() {
-        return this.renderHeaderFooter;
-    }
-
     @Override
     public void setHeader(IChatComponent headerIn) {
         super.setHeader(headerIn);

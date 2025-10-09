@@ -76,11 +76,6 @@ public class HPlayer {
         this.playerName = name;
     }
 
-    public String getNickname() {
-        return "Nickname Test";
-//        return nickName == null ? playerName : nickName;
-    }
-
     public List<Stat> getFormattedGameStats(String gameName) {
         try {
             HGameBase game = this.gameMap == null ? null : this.gameMap.get(gameName);

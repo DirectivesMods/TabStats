@@ -17,7 +17,6 @@ import org.apache.http.impl.conn.PoolingHttpClientConnectionManager;
 import org.apache.http.util.EntityUtils;
 
 import java.io.IOException;
-import java.io.InputStream;
 import java.io.InputStreamReader;
 import java.nio.charset.StandardCharsets;
 
@@ -25,7 +24,6 @@ public class HypixelAPI {
     public JsonObject achievementObj;
     public JsonObject playerObject;
     private static final String PLAYER_ENDPOINT = "https://api.hypixel.net/v2/player?key=%s&uuid=%s";
-    private static final String MOJANG_UUID_ENDPOINT = "https://api.mojang.com/users/profiles/minecraft/%s";
     private static final PoolingHttpClientConnectionManager HTTP_CONN_MANAGER;
     private static final CloseableHttpClient HTTP_CLIENT;
     private static final RequestConfig REQUEST_CONFIG;
@@ -141,33 +139,4 @@ public class HypixelAPI {
         }
     }
 
-    /**
-     * @param name Target's Minecraft Name
-     * @return UUID of Target using Mojang API
-     */
-    public static String getUUID(String name) {
-        String uuid = "";
-        HttpGet request = new HttpGet(String.format(MOJANG_UUID_ENDPOINT, name));
-        request.addHeader("Accept", "application/json");
-        try (CloseableHttpResponse response = HTTP_CLIENT.execute(request)) {
-            HttpEntity entity = response.getEntity();
-            if (entity == null) {
-                return uuid;
-            }
-
-            try (InputStream is = entity.getContent();
-                 InputStreamReader reader = new InputStreamReader(is, StandardCharsets.UTF_8)) {
-                JsonObject object = new JsonParser().parse(reader).getAsJsonObject();
-                uuid = object.get("id").getAsString();
-            } catch (NullPointerException ex) {
-                // Silently handle null pointer errors
-            } finally {
-                EntityUtils.consumeQuietly(entity);
-            }
-        } catch (IOException ex) {
-            // Silently handle IO errors
-        }
-
-        return uuid;
-    }
 }
