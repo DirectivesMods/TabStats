@@ -23,6 +23,7 @@ public class ModConfig {
     private File configFile;
     private boolean renderHeaderFooter = true;
     private boolean modEnabled = true;
+    private long apiKeyLastLoaded = -1L;
 
     public static ModConfig getInstance() {
         if (instance == null) instance = new ModConfig();
@@ -30,21 +31,27 @@ public class ModConfig {
 
     }
 
-    public String getApiKey() {
-        // Always reload the API key from file to ensure we get the latest value
-        if (getFile().exists()) {
-            String freshApiKey = getString(APIKEY);
-            if (freshApiKey != null && !freshApiKey.trim().isEmpty()) {
-                // Check if API key has changed
-                if (lastApiKey != null && !lastApiKey.equals(freshApiKey)) {
-                    onApiKeyChanged();
+    public synchronized String getApiKey() {
+        File file = getFile();
+        if (file.exists()) {
+            long modified = file.lastModified();
+            if (this.apiKey == null || modified != this.apiKeyLastLoaded) {
+                String freshApiKey = getString(APIKEY);
+                this.apiKeyLastLoaded = modified;
+
+                if (freshApiKey != null) {
+                    String normalizedFresh = normalizeKey(freshApiKey);
+                    String normalizedLast = normalizeKey(this.lastApiKey);
+                    if (!normalizedFresh.equals(normalizedLast) && this.lastApiKey != null) {
+                        onApiKeyChanged();
+                    }
+                    this.lastApiKey = freshApiKey;
+                    this.apiKey = freshApiKey;
                 }
-                this.lastApiKey = freshApiKey;
-                this.apiKey = freshApiKey;
-                return freshApiKey;
             }
         }
-        return apiKey;
+
+        return this.apiKey;
     }
 
     private void onApiKeyChanged() {
@@ -129,6 +136,7 @@ public class ModConfig {
         lastApiKey = apiKey;
         renderHeaderFooter = getBoolean(RENDER_HEADER_FOOTER, true);
         modEnabled = getBoolean(MOD_ENABLED, true);
+        apiKeyLastLoaded = getFile().lastModified();
     }
 
     public File getFile() {
@@ -171,6 +179,7 @@ public class ModConfig {
         try (Writer writer = new FileWriter(file)) {
             Handler.getGson().toJson(map, writer);
             writer.flush(); // Ensure it's written to disk
+            apiKeyLastLoaded = file.lastModified();
         } catch (Exception ex) {
             // Silently handle save errors
         }

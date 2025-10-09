@@ -21,8 +21,8 @@ import java.util.concurrent.ConcurrentHashMap;
 public class StatWorld {
     private final ConcurrentHashMap<UUID, HPlayer> worldPlayers;
     private final Map<String, HPlayer> nameAliases;
-    protected final List<UUID> statAssembly = new ArrayList<>();
-    protected final List<UUID> existedMoreThan5Seconds = new ArrayList<>();
+    protected final Set<UUID> statAssembly = ConcurrentHashMap.newKeySet();
+    protected final Set<UUID> existedMoreThan5Seconds = ConcurrentHashMap.newKeySet();
     protected final Map<UUID, Integer> timeCheck = new HashMap<>();
 
     public StatWorld() {

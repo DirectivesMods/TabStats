@@ -6,10 +6,14 @@ import tabstats.playerapi.exception.*;
 import com.google.gson.JsonObject;
 import com.google.gson.JsonParser;
 import com.google.gson.JsonSyntaxException;
+import org.apache.http.HttpEntity;
+import org.apache.http.client.config.RequestConfig;
 import org.apache.http.client.methods.CloseableHttpResponse;
 import org.apache.http.client.methods.HttpGet;
 import org.apache.http.impl.client.CloseableHttpClient;
 import org.apache.http.impl.client.HttpClients;
+import org.apache.http.impl.conn.PoolingHttpClientConnectionManager;
+import org.apache.http.util.EntityUtils;
 
 import java.io.IOException;
 import java.io.InputStream;
@@ -19,6 +23,27 @@ import java.nio.charset.StandardCharsets;
 public class HypixelAPI {
     public JsonObject achievementObj;
     public JsonObject playerObject;
+    private static final String PLAYER_ENDPOINT = "https://api.hypixel.net/v2/player?key=%s&uuid=%s";
+    private static final String MOJANG_UUID_ENDPOINT = "https://api.mojang.com/users/profiles/minecraft/%s";
+    private static final PoolingHttpClientConnectionManager HTTP_CONN_MANAGER;
+    private static final CloseableHttpClient HTTP_CLIENT;
+    private static final RequestConfig REQUEST_CONFIG;
+
+    static {
+        HTTP_CONN_MANAGER = new PoolingHttpClientConnectionManager();
+        HTTP_CONN_MANAGER.setMaxTotal(32);
+        HTTP_CONN_MANAGER.setDefaultMaxPerRoute(16);
+        REQUEST_CONFIG = RequestConfig.custom()
+                .setConnectTimeout(5_000)
+                .setSocketTimeout(5_000)
+                .setConnectionRequestTimeout(5_000)
+                .build();
+
+        HTTP_CLIENT = HttpClients.custom()
+                .setConnectionManager(HTTP_CONN_MANAGER)
+                .setDefaultRequestConfig(REQUEST_CONFIG)
+                .build();
+    }
 
     private String getApiKey() {
         return ModConfig.getInstance().getApiKey();
@@ -37,16 +62,20 @@ public class HypixelAPI {
         if (apiKey == null || apiKey.trim().isEmpty()) {
             throw new InvalidKeyException();
         } else {
-            try (CloseableHttpClient client = HttpClients.createDefault();
-                 CloseableHttpResponse response = client.execute(new HttpGet(String.format("https://api.hypixel.net/v2/player?key=%s&uuid=%s", apiKey, uuid.replace("-", ""))))) {
-                if (response.getEntity() == null) {
+            HttpGet request = new HttpGet(String.format(PLAYER_ENDPOINT, apiKey, uuid.replace("-", "")));
+            request.addHeader("Accept", "application/json");
+            try (CloseableHttpResponse response = HTTP_CLIENT.execute(request)) {
+                HttpEntity entity = response.getEntity();
+                if (entity == null) {
                     return obj;
                 }
 
-                try (InputStreamReader reader = new InputStreamReader(response.getEntity().getContent(), StandardCharsets.UTF_8)) {
+                try (InputStreamReader reader = new InputStreamReader(entity.getContent(), StandardCharsets.UTF_8)) {
                     obj = new JsonParser().parse(reader).getAsJsonObject();
                 } catch (JsonSyntaxException ex) {
                     throw new BadJsonException();
+                } finally {
+                    EntityUtils.consumeQuietly(entity);
                 }
 
                 if (obj.get("player") == null) {
@@ -92,18 +121,22 @@ public class HypixelAPI {
      */
     public static String getUUID(String name) {
         String uuid = "";
-        try (CloseableHttpClient client = HttpClients.createDefault();
-             CloseableHttpResponse response = client.execute(new HttpGet(String.format("https://api.mojang.com/users/profiles/minecraft/%s", name)))) {
-            if (response.getEntity() == null) {
+        HttpGet request = new HttpGet(String.format(MOJANG_UUID_ENDPOINT, name));
+        request.addHeader("Accept", "application/json");
+        try (CloseableHttpResponse response = HTTP_CLIENT.execute(request)) {
+            HttpEntity entity = response.getEntity();
+            if (entity == null) {
                 return uuid;
             }
 
-            try (InputStream is = response.getEntity().getContent();
+            try (InputStream is = entity.getContent();
                  InputStreamReader reader = new InputStreamReader(is, StandardCharsets.UTF_8)) {
                 JsonObject object = new JsonParser().parse(reader).getAsJsonObject();
                 uuid = object.get("id").getAsString();
             } catch (NullPointerException ex) {
                 // Silently handle null pointer errors
+            } finally {
+                EntityUtils.consumeQuietly(entity);
             }
         } catch (IOException ex) {
             // Silently handle IO errors

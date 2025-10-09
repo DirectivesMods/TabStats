@@ -65,9 +65,13 @@ public class WorldLoader extends StatWorld {
         });
     }
 
-    /* populates and checks the stat world player cache every tick */
+    /* populates and checks the stat world player cache every client tick */
     @SubscribeEvent
-    public void onTick(TickEvent event) {
+    public void onClientTick(TickEvent.ClientTickEvent event) {
+        if (event.phase != TickEvent.Phase.END) {
+            return;
+        }
+
         if (!ModConfig.getInstance().isModEnabled()) {
             // Just reset scroll when disabling, preserve cache
             if (lastModEnabled) {
@@ -110,11 +114,14 @@ public class WorldLoader extends StatWorld {
                 continue;
             }
 
-            if (this.getWorldPlayers().containsKey(uuid) || this.statAssembly.contains(uuid)) {
+            if (this.getWorldPlayers().containsKey(uuid)) {
                 continue;
             }
 
-            this.statAssembly.add(uuid);
+            if (!this.statAssembly.add(uuid)) {
+                continue;
+            }
+
             if (uuid.version() == 4 || uuid.version() == 2) {
                 this.fetchStats(entityPlayer);
             } else if (uuid.version() == 1) {
