@@ -1,4 +1,4 @@
-// Local-only installer for TabStats. This file is ignored by git.
+// Local-only installer for TabStats.
 // It wires a task to copy the release jar into the mods directory of your choice.
 // Set modsDir in gradle-local.properties (or pass -PmodsDir=<path>) to enable it.
 
