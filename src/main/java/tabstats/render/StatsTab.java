@@ -244,7 +244,7 @@ public class StatsTab extends GuiPlayerTabOverlay {
 
         drawRect(startingX, startingY, contentRight, startingY + this.entryHeight, 553648127);
 
-        int contentCenterX = leftBound + totalContentWidth / 2;
+        int contentCenterX = startingX + Math.round(width / 2.0f);
 
         if (headerLineCount > 0 && headerLines != null) {
             int headerY = baseY;
@@ -327,29 +327,31 @@ public class StatsTab extends GuiPlayerTabOverlay {
                         }
                     }
 
-                    List<Stat> statList = hPlayer.getFormattedGameStats(gamemode);
-                    if (statList == null || statList.isEmpty()) {
-                        statList = hPlayer.getFormattedGameStats("BEDWARS");
-                    }
-
-                    int valueXSpacer = startingX + this.mc.fontRendererObj.getStringWidth(ChatColor.BOLD + "[YOUTUBE] WWWWWWWWWWWWWWWW") + 10 + headSize + 2;
-
-                    for (Stat stat : statList) {
-                        String statValue = "";
-                        switch (stat.getType()) {
-                            case INT:
-                                statValue = Integer.toString(((StatInt) stat).getValue());
-                                break;
-                            case DOUBLE:
-                                statValue = Double.toString(((StatDouble) stat).getValue());
-                                break;
-                            case STRING:
-                                statValue = ((StatString) stat).getValue();
-                                break;
+                    if (gamemode != null) {
+                        List<Stat> statList = hPlayer.getFormattedGameStats(gamemode);
+                        if (statList == null || statList.isEmpty()) {
+                            statList = hPlayer.getFormattedGameStats("BEDWARS");
                         }
 
-                        this.mc.fontRendererObj.drawStringWithShadow(statValue, valueXSpacer, ySpacer + textBaselineOffset, ChatColor.WHITE.getRGB());
-                        valueXSpacer += this.mc.fontRendererObj.getStringWidth(ChatColor.BOLD + (stat.getStatName() == null ? "" : stat.getStatName().toUpperCase())) + 10;
+                        int valueXSpacer = startingX + this.mc.fontRendererObj.getStringWidth(ChatColor.BOLD + "[YOUTUBE] WWWWWWWWWWWWWWWW") + 10 + headSize + 2;
+
+                        for (Stat stat : statList) {
+                            String statValue = "";
+                            switch (stat.getType()) {
+                                case INT:
+                                    statValue = Integer.toString(((StatInt) stat).getValue());
+                                    break;
+                                case DOUBLE:
+                                    statValue = Double.toString(((StatDouble) stat).getValue());
+                                    break;
+                                case STRING:
+                                    statValue = ((StatString) stat).getValue();
+                                    break;
+                            }
+
+                            this.mc.fontRendererObj.drawStringWithShadow(statValue, valueXSpacer, ySpacer + textBaselineOffset, ChatColor.WHITE.getRGB());
+                            valueXSpacer += this.mc.fontRendererObj.getStringWidth(ChatColor.BOLD + (stat.getStatName() == null ? "" : stat.getStatName().toUpperCase())) + 10;
+                        }
                     }
                 }
 

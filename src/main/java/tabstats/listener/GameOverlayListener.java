@@ -61,18 +61,19 @@ public class GameOverlayListener {
             return;
         }
 
+        Scoreboard scoreboard = this.mc.thePlayer.getWorldScoreboard();
+        String gamemode = resolveGamemode(scoreboard);
+        boolean supportedGamemode = gamemode != null;
+
         ensureCustomOverlayInjected();
 
         event.setCanceled(true);
-
-        Scoreboard scoreboard = this.mc.thePlayer.getWorldScoreboard();
-        String gamemode = resolveGamemode(scoreboard);
 
         StatWorld statWorld = TabStats.getTabStats().getStatWorld();
         HPlayer theHPlayer = statWorld == null ? null : statWorld.getPlayerByUUID(this.mc.thePlayer.getUniqueID());
 
         List<Stat> gameStatTitleList;
-        if (theHPlayer == null) {
+        if (!supportedGamemode || theHPlayer == null) {
             gameStatTitleList = Collections.emptyList();
         } else {
             List<Stat> stats = theHPlayer.getFormattedGameStats(gamemode);
@@ -84,21 +85,30 @@ public class GameOverlayListener {
         }
 
         int width = computeTabWidth(gameStatTitleList);
-        this.statsTab.renderNewPlayerlist(width, scoreboard, scoreboard.getObjectiveInDisplaySlot(0), gameStatTitleList, gamemode);
+        this.statsTab.renderNewPlayerlist(width, scoreboard, scoreboard.getObjectiveInDisplaySlot(0), gameStatTitleList, supportedGamemode ? gamemode : null);
     }
 
     private String resolveGamemode(Scoreboard scoreboard) {
+        if (scoreboard == null) {
+            return null;
+        }
+
         ScoreObjective sidebarObjective = scoreboard.getObjectiveInDisplaySlot(1);
         if (sidebarObjective == null) {
-            return "BEDWARS";
+            return null;
         }
 
         String stripped = ChatColor.stripColor(sidebarObjective.getDisplayName());
         if (stripped == null) {
-            return "BEDWARS";
+            return null;
         }
 
-        return stripped.replace(" ", "").toUpperCase();
+        String normalized = stripped.replace(" ", "").toUpperCase();
+        if ("BEDWARS".equals(normalized) || "DUELS".equals(normalized) || "SKYWARS".equals(normalized)) {
+            return normalized;
+        }
+
+        return null;
     }
 
     private int computeTabWidth(List<Stat> stats) {
