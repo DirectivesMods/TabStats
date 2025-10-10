@@ -1,12 +1,12 @@
 [
   {
-    "modid": "tabstats",
-    "name": "TabStats",
-    "description": "A forge 1.8.9 mod to check Hypixel player stats directly into your tablist!",
-    "version": "1.3.0",
-    "mcversion": "1.8.9",
-    "url": "https://github.com/DirectivesMods/TabStats",
-    "updateUrl": "",
+    "modid": "${id}",
+    "name": "${name}",
+    "description": "${description}",
+    "version": "${version}",
+    "mcversion": "${mcversion}",
+    "url": "${url}",
+    "updateUrl": "${updateUrl}",
     "authorList": [
       "exejar"
     ],

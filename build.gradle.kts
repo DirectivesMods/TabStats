@@ -64,13 +64,19 @@ tasks {
         inputs.property("mcversion", mcVersion)
         inputs.property("name", projectName)
         inputs.property("id", projectId)
+        inputs.property("description", project.findProperty("projectDescription") ?: "")
+        inputs.property("url", project.findProperty("projectUrl") ?: "")
+        inputs.property("updateUrl", project.findProperty("projectUpdateUrl") ?: "")
 
         filesMatching("mcmod.info") {
             expand(
                     "id" to projectId,
                     "name" to projectName,
                     "version" to projectVersion,
-                    "mcversion" to mcVersion
+                    "mcversion" to mcVersion,
+                    "description" to (project.findProperty("projectDescription") ?: ""),
+                    "url" to (project.findProperty("projectUrl") ?: ""),
+                    "updateUrl" to (project.findProperty("projectUpdateUrl") ?: "")
             )
         }
 

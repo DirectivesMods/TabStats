@@ -5,7 +5,6 @@ import tabstats.listener.GameOverlayListener;
 import tabstats.listener.GuiOpenListener;
 import tabstats.listener.InputListener;
 import tabstats.playerapi.WorldLoader;
-import tabstats.util.References;
 import tabstats.command.TabStatsCommand;
 import net.minecraftforge.client.ClientCommandHandler;
 import net.minecraftforge.common.MinecraftForge;
@@ -16,7 +15,7 @@ import net.minecraftforge.fml.common.event.FMLPreInitializationEvent;
 
 import java.util.Arrays;
 
-@Mod(modid = References.MODID, name = References.MODNAME, clientSideOnly = true, version = References.VERSION, acceptedMinecraftVersions = "1.8.9")
+@Mod(modid = "@ID@", name = "@NAME@", clientSideOnly = true, version = "@VERSION@", acceptedMinecraftVersions = "1.8.9")
 public class TabStats {
     private static TabStats tabStats;
     private WorldLoader statWorld;
