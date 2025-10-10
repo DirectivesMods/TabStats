@@ -99,6 +99,11 @@ hypixel-api-key.txt
 /tabstats/
 apikey.json
 
+# User-specific configuration files
+user.properties
+local.properties
+gradle-local.properties
+
 # Performance profiling
 *.hprof
 *.prof
