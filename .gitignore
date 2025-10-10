@@ -87,7 +87,7 @@ remappedSrc/
 temp/
 tmp/
 
-# API Keys and Secrets (important for Hypixel API integration)
+# API Keys and Secrets
 *.key
 *.secret
 config/secrets.properties
@@ -98,11 +98,6 @@ hypixel-api-key.txt
 /.minecraft/tabstats/
 /tabstats/
 apikey.json
-
-# User-specific configuration files
-user.properties
-local.properties
-gradle-local.properties
 
 # Performance profiling
 *.hprof
@@ -138,6 +133,3 @@ dependencies/
 .env
 .env.local
 .env.*.local
-
-# Local Gradle overrides (per-developer install script)
-install.local.gradle.kts

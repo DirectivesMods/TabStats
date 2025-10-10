@@ -99,3 +99,8 @@ tasks {
         }
     }
 }
+
+val localInstallScript = file("install.local.gradle.kts")
+if (localInstallScript.exists()) {
+    apply(from = localInstallScript)
+}
