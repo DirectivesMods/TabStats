@@ -68,3 +68,8 @@ val installMod = tasks.register<Copy>("installMod") {
 tasks.named("build") {
     finalizedBy(installMod)
 }
+
+/*
+    If you want to use this, create a "gradle-local.properties" file with the following content:
+    modsDir=/path/to/your/mods
+ */
