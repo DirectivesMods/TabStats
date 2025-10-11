@@ -1,6 +1,16 @@
-// Local-only installer for TabStats.
-// It wires a task to copy the release jar into the mods directory of your choice.
-// Set modsDir in gradle-local.properties (or pass -PmodsDir=<path>) to enable it.
+/*
+    Locally installs the mod to a folder of your choice after building.
+
+    Instructions for use:
+
+    Duplicate gradle.properties and delete all the text in it.
+    Then rename the file to gradle-local.properties.
+
+    Then, add this line to it:
+    modsDir=/path/to/your/mods
+
+    Obviously, replace /path/to/your/mods with the actual path to your mods folder.
+ */
 
 import org.gradle.api.GradleException
 import org.gradle.api.file.DuplicatesStrategy
@@ -68,8 +78,3 @@ val installMod = tasks.register<Copy>("installMod") {
 tasks.named("build") {
     finalizedBy(installMod)
 }
-
-/*
-    If you want to use this, create a "gradle-local.properties" file with the following content:
-    modsDir=/path/to/your/mods
- */
