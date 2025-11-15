@@ -12,104 +12,45 @@ import net.minecraft.util.ChatComponentText;
 import java.io.IOException;
 
 public class TabStatsGui extends GuiScreen {
-    private MaskedGuiTextField apiField;
-    private boolean showingApiKey = false;
     private GuiButton headerFooterButton;
     private GuiButton modToggleButton;
-    private int fieldX;
-    private int fieldY;
     private int titleY;
-    private int fieldWidth;
 
     @Override
     public void initGui() {
         super.initGui();
         this.buttonList.clear();
-        this.titleY = this.height / 2 - 80;
-        int toggleY = this.titleY + 20;
-        int headerToggleY = toggleY + 24;
-
-        this.fieldWidth = Math.max(220, this.fontRendererObj.getStringWidth("WWWWWWWW-WWWW-WWWW-WWWW-WWWWWWWWWWWW") + 10);
-        this.fieldX = this.width / 2 - this.fieldWidth / 2;
-        this.fieldY = headerToggleY + 36;
-        int buttonRowY = this.fieldY + 32;
+        this.titleY = this.height / 2 - 70;
+        int buttonHeight = 20;
+        int rowSpacing = 24;
+        int singleButtonWidth = 200;
+        int centerX = this.width / 2;
+        int toggleX = centerX - singleButtonWidth / 2;
+        int modToggleY = this.titleY + rowSpacing;
+        int headerToggleY = modToggleY + rowSpacing;
 
         ModConfig cfg = ModConfig.getInstance();
 
-        this.modToggleButton = new GuiButton(6, this.fieldX, toggleY, this.fieldWidth, 20, formatModToggleLabel(cfg.isModEnabled()));
+        this.modToggleButton = new GuiButton(6, toggleX, modToggleY, singleButtonWidth, buttonHeight, formatModToggleLabel(cfg.isModEnabled()));
         this.buttonList.add(this.modToggleButton);
 
-        this.headerFooterButton = new GuiButton(5, this.fieldX, headerToggleY, this.fieldWidth, 20, formatHeaderFooterLabel(cfg.isRenderHeaderFooterEnabled()));
+        this.headerFooterButton = new GuiButton(5, toggleX, headerToggleY, singleButtonWidth, buttonHeight, formatHeaderFooterLabel(cfg.isRenderHeaderFooterEnabled()));
         this.buttonList.add(this.headerFooterButton);
 
-        this.apiField = new MaskedGuiTextField(3, this.fontRendererObj, this.fieldX, this.fieldY, this.fieldWidth, 20);
-        this.apiField.setMaxStringLength(50);
-        String current = cfg.getApiKey();
-        this.apiField.setText(current == null ? "" : current);
-        this.showingApiKey = false;
-        this.apiField.setRevealing(this.showingApiKey);
+        int halfWidth = 98;
+        int buttonSpacing = 4;
+        int apiRowWidth = halfWidth * 2 + buttonSpacing;
+        int apiStartX = centerX - apiRowWidth / 2;
+        int apiButtonY = headerToggleY + rowSpacing;
 
-        this.buttonList.add(new GuiButton(4, this.fieldX + this.fieldWidth + 10, this.fieldY, 60, 20, "Show"));
-
-        int buttonSpacing = 6;
-        int actionButtonWidth = (this.fieldWidth - buttonSpacing * 2) / 3;
-        int firstButtonX = this.fieldX;
-        this.buttonList.add(new GuiButton(0, firstButtonX, buttonRowY, actionButtonWidth, 20, "Save"));
-        this.buttonList.add(new GuiButton(1, firstButtonX + actionButtonWidth + buttonSpacing, buttonRowY, actionButtonWidth, 20, "Clear"));
-        this.buttonList.add(new GuiButton(2, firstButtonX + (actionButtonWidth + buttonSpacing) * 2, buttonRowY, actionButtonWidth, 20, "Close"));
+        this.buttonList.add(new GuiButton(7, apiStartX, apiButtonY, halfWidth, buttonHeight, "Hypixel API"));
+        this.buttonList.add(new GuiButton(8, apiStartX + halfWidth + buttonSpacing, apiButtonY, halfWidth, buttonHeight, "Urchin API"));
     }
 
     @Override
     protected void actionPerformed(GuiButton button) {
         ModConfig cfg = ModConfig.getInstance();
-        if (button.id == 0) {
-            String key = this.apiField.getText().trim();
-            String currentKey = cfg.getApiKey();
-            // Only update and refresh if the key actually changed
-            if (!key.equals(currentKey == null ? "" : currentKey)) {
-                cfg.setApiKey(key);
-                cfg.save();
-                this.apiField.setText(key);
-                this.apiField.setRevealing(this.showingApiKey);
-                TabStats instance = TabStats.getTabStats();
-                if (instance != null && instance.isModEnabled() && instance.getStatWorld() != null) {
-                    try {
-                        instance.getStatWorld().recheckAllPlayers();
-                    } catch (Exception ignored) {
-                        // Silent fail - don't spam console
-                    }
-                }
-                Minecraft.getMinecraft().thePlayer.addChatMessage(new ChatComponentText(ChatColor.GREEN + "[TabStats] " + ChatColor.WHITE + "API key updated."));
-            } else {
-                Minecraft.getMinecraft().thePlayer.addChatMessage(new ChatComponentText(ChatColor.GREEN + "[TabStats] " + ChatColor.WHITE + "API key unchanged."));
-            }
-        } else if (button.id == 1) {
-            String currentKey = cfg.getApiKey();
-            // Only clear and refresh if there's actually a key to clear
-            if (currentKey != null && !currentKey.trim().isEmpty()) {
-                cfg.setApiKey("");
-                cfg.save();
-                this.apiField.setText("");
-                this.apiField.setRevealing(this.showingApiKey);
-                TabStats instance = TabStats.getTabStats();
-                if (instance != null && instance.isModEnabled() && instance.getStatWorld() != null) {
-                    try {
-                        instance.getStatWorld().recheckAllPlayers();
-                    } catch (Exception ignored) {
-                        // Silent fail - don't spam console
-                    }
-                }
-                Minecraft.getMinecraft().thePlayer.addChatMessage(new ChatComponentText(ChatColor.GREEN + "[TabStats] " + ChatColor.WHITE + "API key cleared."));
-            } else {
-                Minecraft.getMinecraft().thePlayer.addChatMessage(new ChatComponentText(ChatColor.GREEN + "[TabStats] " + ChatColor.WHITE + "API key is already empty."));
-            }
-        } else if (button.id == 2) {
-            Minecraft.getMinecraft().displayGuiScreen(null);
-        } else if (button.id == 4) {
-            this.showingApiKey = !this.showingApiKey;
-            button.displayString = this.showingApiKey ? "Hide" : "Show";
-            this.apiField.setRevealing(this.showingApiKey);
-        } else if (button.id == 5) {
+        if (button.id == 5) {
             boolean newValue = !cfg.isRenderHeaderFooterEnabled();
             cfg.setRenderHeaderFooterEnabled(newValue);
             cfg.save();
@@ -148,6 +89,10 @@ public class TabStatsGui extends GuiScreen {
             if (Minecraft.getMinecraft().thePlayer != null) {
                 Minecraft.getMinecraft().thePlayer.addChatMessage(new ChatComponentText(ChatColor.GREEN + "[TabStats] " + ChatColor.WHITE + "Mod " + (newValue ? "enabled." : "disabled.")));
             }
+        } else if (button.id == 7) {
+            Minecraft.getMinecraft().displayGuiScreen(new HypixelApiKeyGui(this));
+        } else if (button.id == 8) {
+            Minecraft.getMinecraft().displayGuiScreen(new UrchinApiKeyGui(this));
         }
     }
 
@@ -157,24 +102,13 @@ public class TabStatsGui extends GuiScreen {
             Minecraft.getMinecraft().displayGuiScreen(null);
             return;
         }
-        if (this.apiField.textboxKeyTyped(typedChar, keyCode)) {
-            return;
-        }
         super.keyTyped(typedChar, keyCode);
-    }
-
-    @Override
-    protected void mouseClicked(int mouseX, int mouseY, int mouseButton) throws IOException {
-        super.mouseClicked(mouseX, mouseY, mouseButton);
-        this.apiField.mouseClicked(mouseX, mouseY, mouseButton);
     }
 
     @Override
     public void drawScreen(int mouseX, int mouseY, float partialTicks) {
         this.drawDefaultBackground();
         drawCenteredString(this.fontRendererObj, "TabStats", this.width / 2, this.titleY, 0xFFFFFF);
-        drawString(this.fontRendererObj, "Hypixel API Key:", this.fieldX, this.fieldY - 12, 0xAAAAAA);
-        this.apiField.drawTextBox();
         super.drawScreen(mouseX, mouseY, partialTicks);
     }
 

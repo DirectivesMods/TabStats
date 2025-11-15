@@ -25,6 +25,7 @@ public class StatWorld {
     protected final Set<UUID> statAssembly = ConcurrentHashMap.newKeySet();
     protected final Set<UUID> existedMoreThan5Seconds = ConcurrentHashMap.newKeySet();
     protected final Map<UUID, Integer> timeCheck = new HashMap<>();
+    protected volatile long lastWorldJoinTime;
 
     public StatWorld() {
         worldPlayers = new ConcurrentHashMap<>();
@@ -94,6 +95,10 @@ public class StatWorld {
 
     public ConcurrentHashMap<UUID, HPlayer> getWorldPlayers() {
         return this.worldPlayers;
+    }
+
+    public long getLastWorldJoinTime() {
+        return lastWorldJoinTime;
     }
 
     public void removeFromStatAssembly(UUID uuid) { this.statAssembly.remove(uuid); }

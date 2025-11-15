@@ -10,6 +10,8 @@
     modsDir=/path/to/your/mods
 
     Obviously, replace /path/to/your/mods with the actual path to your mods folder.
+
+    Next time you successfully build the mod, it will be installed to the mods folder.
  */
 
 import org.gradle.api.GradleException

@@ -3,7 +3,8 @@ package tabstats.config;
 public enum ModConfigNames {
     APIKEY("ApiKey"),
     RENDER_HEADER_FOOTER("RenderHeaderFooter"),
-    MOD_ENABLED("ModEnabled");
+    MOD_ENABLED("ModEnabled"),
+    URCHIN_API_KEY("UrchinApiKey");
 
     private final String name;
 

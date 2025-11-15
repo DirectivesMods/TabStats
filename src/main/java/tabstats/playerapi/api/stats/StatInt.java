@@ -4,6 +4,7 @@ import com.google.gson.JsonObject;
 
 public class StatInt extends Stat {
     private int value;
+    private boolean loadedValue;
 
     /**
      * @param statName Name of the Stat
@@ -22,14 +23,20 @@ public class StatInt extends Stat {
     public void setStat() {
         try {
             this.value = Integer.parseInt(gameObject.get(jsonName).getAsString());
+            this.loadedValue = true;
         } catch (Exception ex) {
             this.value = 0;
+            this.loadedValue = false;
         }
     }
 
     public void setValue(int value) { this.value = value; }
 
     public int getValue() { return this.value; }
+
+    public boolean isLoadedValue() {
+        return loadedValue;
+    }
 
     @Override
     public StatType getType() {

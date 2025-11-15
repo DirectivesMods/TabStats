@@ -1,11 +1,13 @@
 package tabstats.playerapi.api.games.bedwars;
 
 import tabstats.playerapi.api.games.HypixelGames;
+import tabstats.playerapi.api.games.bedwars.BedwarsUtil.CachedUrchinTag;
 import tabstats.playerapi.api.stats.Stat;
 import tabstats.playerapi.api.stats.StatInt;
 import tabstats.playerapi.api.stats.StatString;
 import tabstats.playerapi.exception.GameNullException;
 import tabstats.util.ChatColor;
+import tabstats.util.Handler;
 import com.google.gson.JsonObject;
 
 import java.util.ArrayList;
@@ -16,6 +18,9 @@ public class Bedwars extends BedwarsUtil {
     private List<Stat> statList;
     private List<Stat> formattedStatList;
     public Stat gamesPlayed, finalKills, finalDeaths, wins, losses, kills, deaths, bedsBroken, bedsLost, winstreak, star;
+    private CachedUrchinTag cachedUrchinTag;
+    private StatString tagStat;
+    private volatile boolean urchinLookupScheduled;
 
     public Bedwars(String playerName, String playerUUID, JsonObject wholeObject) {
         super(playerName, playerUUID);
@@ -88,15 +93,19 @@ public class Bedwars extends BedwarsUtil {
         List<Stat> returnList = new ArrayList<>(this.formattedStatList);
 
         // If player has no stats, return empty list so they show only their name
-        if (!this.hasPlayed || this.bedwarsJson == null) {
-            return new ArrayList<>(); // Empty list = no stats displayed
-        }
-
         int starVal = 0;
         try { if (this.star != null) starVal = ((StatInt)this.star).getValue(); } catch (Exception ignored) {}
         StatString star = new StatString("STAR");
         star.setValue(this.getStarWithColor(starVal));
-        returnList.add(0, star);
+
+        // Insert STAR at index 1 so TAG stays as the first column
+        boolean hasTagColumn = this.tagStat != null && !returnList.isEmpty() && returnList.get(0) == this.tagStat;
+        int insertIndex = hasTagColumn ? Math.min(1, returnList.size()) : 0;
+        returnList.add(insertIndex, star);
+        if (!this.hasPlayed || this.bedwarsJson == null) {
+            return returnList;
+        }
+
         return returnList;
     }
 
@@ -104,8 +113,20 @@ public class Bedwars extends BedwarsUtil {
     /* only set a single time */
     @Override
     public void setFormattedStatList() {
+        boolean hasUrchinKey = !getActiveUrchinApiKey().isEmpty();
+        if (hasUrchinKey) {
+            if (this.tagStat == null) {
+                this.tagStat = new StatString("TAG");
+            }
+            this.tagStat.setValue("");
+            this.formattedStatList.add(this.tagStat);
+            scheduleUrchinLookup();
+        } else {
+            this.tagStat = null;
+        }
+
         StatString ws = new StatString("WS");
-        ws.setValue(this.getWSColor(((StatInt)this.winstreak).getValue()).toString() + ((StatInt)this.winstreak).getValue());
+        ws.setValue(formatWsValue());
         this.formattedStatList.add(ws);
 
         StatString fkdr = new StatString("FKDR");
@@ -128,4 +149,68 @@ public class Bedwars extends BedwarsUtil {
         bblr.setValue(this.getBblrColor(this.getBblr(this)).toString() + this.getBblr(this));
         this.formattedStatList.add(bblr);
     }
+
+    private void scheduleUrchinLookup() {
+        if (this.cachedUrchinTag != null) {
+            applyUrchinResult(this.cachedUrchinTag);
+            return;
+        }
+
+        if (getActiveUrchinApiKey().isEmpty()) {
+            return;
+        }
+
+        String identity = getLookupIdentity();
+        if (identity == null) {
+            applyUrchinResult(createPendingTag());
+            return;
+        }
+
+        CachedUrchinTag cached = getCachedUrchinTag(identity);
+        if (cached != null) {
+            applyUrchinResult(cached);
+            return;
+        }
+
+        if (this.urchinLookupScheduled) {
+            return;
+        }
+
+        this.urchinLookupScheduled = true;
+        Handler.asExecutor(() -> {
+            enqueueUrchinLookup(identity, result -> {
+                this.urchinLookupScheduled = false;
+                applyUrchinResult(result);
+            });
+        });
+    }
+
+    private void applyUrchinResult(CachedUrchinTag data) {
+        if (data == null) {
+            return;
+        }
+
+        this.cachedUrchinTag = data;
+        StatString tag = this.tagStat;
+        if (tag != null) {
+            tag.setValue(data.getDisplayValue());
+        }
+        announceTagIfNeeded(data);
+    }
+
+    private String formatWsValue() {
+        if (!(this.winstreak instanceof StatInt)) {
+            return ChatColor.GRAY + "-";
+        }
+
+        StatInt wsStat = (StatInt) this.winstreak;
+        if (!wsStat.isLoadedValue()) {
+            return ChatColor.GRAY + "-";
+        }
+
+        int value = wsStat.getValue();
+        return this.getWSColor(value).toString() + value;
+    }
+
+
 }

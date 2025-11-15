@@ -37,6 +37,7 @@ import org.lwjgl.opengl.GL11;
 
 import java.util.ArrayList;
 import java.util.Comparator;
+import java.util.Collections;
 import java.util.List;
 import java.util.UUID;
 import java.util.regex.Pattern;
@@ -45,6 +46,7 @@ public class StatsTab extends GuiPlayerTabOverlay {
     private static final Ordering<NetworkPlayerInfo> field_175252_a = Ordering.from(new StatsTab.PlayerComparator());
     private static final int MAX_TAB_PLAYERS = 80;
     private static final Pattern VALID_USERNAME = Pattern.compile("^[A-Za-z0-9_]{3,16}$");
+    private static final String MAX_RANK_SAMPLE = ChatColor.BOLD + "[YOUTUBE] WWWWWWWWWWWWWWWW";
     private final Minecraft mc;
     private final GuiIngame guiIngame;
     private IChatComponent footer;
@@ -166,37 +168,15 @@ public class StatsTab extends GuiPlayerTabOverlay {
         ScaledResolution scaledRes = new ScaledResolution(this.mc);
         int baseY = 20;
         int fontHeight = this.mc.fontRendererObj.FONT_HEIGHT;
+        int textColor = ChatColor.WHITE.getRGB();
 
-        IChatComponent headerComponent = this.renderHeaderFooter ? this.header : null;
-        String[] headerLines = headerComponent != null ? StringUtils.splitPreserveAllTokens(headerComponent.getFormattedText(), '\n') : null;
-        int headerLineCount = headerLines != null ? headerLines.length : 0;
-        int headerHeight = headerLineCount * fontHeight;
+        TextBlock headerBlock = createTextBlock(this.renderHeaderFooter ? this.header : null);
+        TextBlock footerBlock = createTextBlock(this.renderHeaderFooter ? this.footer : null);
+        int headerHeight = headerBlock.height(fontHeight);
+        int footerHeight = footerBlock.height(fontHeight);
+        int footerSpacing = footerBlock.hasLines() ? 1 : 0;
 
-        IChatComponent footerComponent = this.renderHeaderFooter ? this.footer : null;
-        String[] footerLines = footerComponent != null ? StringUtils.splitPreserveAllTokens(footerComponent.getFormattedText(), '\n') : null;
-        int footerLineCount = footerLines != null ? footerLines.length : 0;
-        int footerHeight = footerLineCount * fontHeight;
-
-        int headerMaxWidth = 0;
-        if (headerLines != null) {
-            for (String line : headerLines) {
-                headerMaxWidth = Math.max(headerMaxWidth, this.mc.fontRendererObj.getStringWidth(line));
-            }
-        }
-
-        int footerMaxWidth = 0;
-        if (footerLines != null) {
-            for (String line : footerLines) {
-                footerMaxWidth = Math.max(footerMaxWidth, this.mc.fontRendererObj.getStringWidth(line));
-            }
-        }
-
-        int footerSpacing = footerHeight > 0 ? 1 : 0;
-
-        int startingY = baseY + headerHeight;
-        if (headerHeight > 0) {
-            startingY += 1;
-        }
+        int startingY = baseY + headerHeight + (headerBlock.hasLines() ? 1 : 0);
 
         String objectiveName = "";
         if (scoreObjectiveIn != null) {
@@ -222,10 +202,7 @@ public class StatsTab extends GuiPlayerTabOverlay {
         List<NetworkPlayerInfo> visiblePlayers = playerList.subList(startIndex, endIndex);
         int visiblePlayerCount = visiblePlayers.size();
 
-        int headerFooterMaxWidth = Math.max(headerMaxWidth, footerMaxWidth);
-        if (headerFooterMaxWidth > width) {
-            width = headerFooterMaxWidth;
-        }
+        width = Math.max(width, Math.max(headerBlock.getMaxWidth(), footerBlock.getMaxWidth()));
 
         int totalContentWidth = width + objectiveLabelWidth;
         int leftBound = scaledRes.getScaledWidth() / 2 - totalContentWidth / 2;
@@ -245,32 +222,19 @@ public class StatsTab extends GuiPlayerTabOverlay {
         drawRect(startingX, startingY, contentRight, startingY + this.entryHeight, 553648127);
 
         int contentCenterX = startingX + Math.round(width / 2.0f);
+        drawCenteredLines(headerBlock, baseY, contentCenterX, fontHeight, textColor);
 
-        if (headerLineCount > 0 && headerLines != null) {
-            int headerY = baseY;
-            for (String line : headerLines) {
-                this.drawCenteredString(this.mc.fontRendererObj, line, contentCenterX, headerY, ChatColor.WHITE.getRGB());
-                headerY += fontHeight;
-            }
-        }
+        int nameColumnStartX = startingX + headSize + 2;
+        int nameColumnWidth = this.mc.fontRendererObj.getStringWidth(MAX_RANK_SAMPLE) + 10;
+        this.mc.fontRendererObj.drawStringWithShadow(ChatColor.BOLD + "NAME", nameColumnStartX, startingY + textBaselineOffset, textColor);
+        this.mc.fontRendererObj.drawStringWithShadow(objectiveName, startingX - objectiveLabelWidth, startingY + textBaselineOffset, textColor);
 
-        int statXSpacer = startingX + headSize + 2;
-        this.mc.fontRendererObj.drawStringWithShadow(ChatColor.BOLD + "NAME", statXSpacer, startingY + textBaselineOffset, ChatColor.WHITE.getRGB());
-        this.mc.fontRendererObj.drawStringWithShadow(objectiveName, startingX - objectiveLabelWidth, startingY + textBaselineOffset, ChatColor.WHITE.getRGB());
-
-        statXSpacer += this.mc.fontRendererObj.getStringWidth(ChatColor.BOLD + "[YOUTUBE] WWWWWWWWWWWWWWWW") + 10;
-
-        for (Stat stat : gameStatTitleList) {
-            String statName = stat.getStatName();
-            String statLabel = statName == null ? "" : statName.toUpperCase();
-            this.mc.fontRendererObj.drawStringWithShadow(ChatColor.BOLD + statLabel, statXSpacer, startingY + textBaselineOffset, ChatColor.WHITE.getRGB());
-            statXSpacer += this.mc.fontRendererObj.getStringWidth(ChatColor.BOLD + statLabel) + 10;
-        }
+        List<StatColumn> statColumns = buildStatColumns(gameStatTitleList);
+        int statColumnStartX = nameColumnStartX + nameColumnWidth;
+        drawStatHeaders(statColumns, statColumnStartX, startingY + textBaselineOffset, textColor);
 
         int headerBottomY = startingY + this.entryHeight + 1;
-        int ySpacer = headerBottomY;
-
-        ySpacer -= (int)(MathHelper.clamp_float(scrollOffset - startIndex, 0.0f, 0.999f) * (this.entryHeight + 1));
+        int ySpacer = headerBottomY - (int)(MathHelper.clamp_float(scrollOffset - startIndex, 0.0f, 0.999f) * (this.entryHeight + 1));
 
         GL11.glEnable(GL11.GL_SCISSOR_TEST);
         GL11.glScissor(
@@ -328,29 +292,9 @@ public class StatsTab extends GuiPlayerTabOverlay {
                     }
 
                     if (gamemode != null) {
-                        List<Stat> statList = hPlayer.getFormattedGameStats(gamemode);
-                        if (statList == null || statList.isEmpty()) {
-                            statList = hPlayer.getFormattedGameStats("BEDWARS");
-                        }
-
-                        int valueXSpacer = startingX + this.mc.fontRendererObj.getStringWidth(ChatColor.BOLD + "[YOUTUBE] WWWWWWWWWWWWWWWW") + 10 + headSize + 2;
-
-                        for (Stat stat : statList) {
-                            String statValue = "";
-                            switch (stat.getType()) {
-                                case INT:
-                                    statValue = Integer.toString(((StatInt) stat).getValue());
-                                    break;
-                                case DOUBLE:
-                                    statValue = Double.toString(((StatDouble) stat).getValue());
-                                    break;
-                                case STRING:
-                                    statValue = ((StatString) stat).getValue();
-                                    break;
-                            }
-
-                            this.mc.fontRendererObj.drawStringWithShadow(statValue, valueXSpacer, ySpacer + textBaselineOffset, ChatColor.WHITE.getRGB());
-                            valueXSpacer += this.mc.fontRendererObj.getStringWidth(ChatColor.BOLD + (stat.getStatName() == null ? "" : stat.getStatName().toUpperCase())) + 10;
+                        List<Stat> statList = resolveStats(hPlayer, gamemode);
+                        if (!statList.isEmpty()) {
+                            drawPlayerStats(statList, statColumns, statColumnStartX, ySpacer + textBaselineOffset, textColor);
                         }
                     }
                 }
@@ -371,7 +315,7 @@ public class StatsTab extends GuiPlayerTabOverlay {
             int indicatorX = contentRight - 10;
 
             if (startIndex > 0) {
-                this.mc.fontRendererObj.drawStringWithShadow(ChatColor.WHITE + "▲", indicatorX, startingY + this.entryHeight + 2, ChatColor.WHITE.getRGB());
+                this.mc.fontRendererObj.drawStringWithShadow(ChatColor.WHITE + "▲", indicatorX, startingY + this.entryHeight + 2, textColor);
             }
 
             if (endIndex < playerListSize) {
@@ -379,18 +323,115 @@ public class StatsTab extends GuiPlayerTabOverlay {
                         ChatColor.WHITE + "▼",
                         indicatorX,
                         startingY + this.entryHeight + 1 + (visiblePlayerCount * (this.entryHeight + 1)) - 10,
-                        ChatColor.WHITE.getRGB()
+                        textColor
                 );
             }
         }
 
-        if (footerLineCount > 0 && footerLines != null) {
-            int footerY = startingY + playerSectionHeight + footerSpacing;
-            for (String line : footerLines) {
-                this.drawCenteredString(this.mc.fontRendererObj, line, contentCenterX, footerY, ChatColor.WHITE.getRGB());
-                footerY += fontHeight;
-            }
+        int footerY = startingY + playerSectionHeight + footerSpacing;
+        drawCenteredLines(footerBlock, footerY, contentCenterX, fontHeight, textColor);
+    }
+
+    private TextBlock createTextBlock(IChatComponent component) {
+        if (component == null) {
+            return TextBlock.EMPTY;
         }
+
+        String[] lines = StringUtils.splitPreserveAllTokens(component.getFormattedText(), '\n');
+        if (lines == null || lines.length == 0) {
+            return TextBlock.EMPTY;
+        }
+
+        int maxWidth = 0;
+        for (String line : lines) {
+            maxWidth = Math.max(maxWidth, this.mc.fontRendererObj.getStringWidth(line));
+        }
+
+        return new TextBlock(lines, maxWidth);
+    }
+
+    private void drawCenteredLines(TextBlock block, int startY, int centerX, int fontHeight, int color) {
+        if (!block.hasLines()) {
+            return;
+        }
+
+        for (String line : block.getLines()) {
+            this.drawCenteredString(this.mc.fontRendererObj, line, centerX, startY, color);
+            startY += fontHeight;
+        }
+    }
+
+    private List<StatColumn> buildStatColumns(List<Stat> stats) {
+        if (stats == null || stats.isEmpty()) {
+            return Collections.emptyList();
+        }
+
+        List<StatColumn> columns = new ArrayList<>(stats.size());
+        for (Stat stat : stats) {
+            String label = formatStatLabel(stat);
+            int columnWidth = this.mc.fontRendererObj.getStringWidth(label) + 10;
+            columns.add(new StatColumn(label, columnWidth));
+        }
+
+        return columns;
+    }
+
+    private void drawStatHeaders(List<StatColumn> columns, int startX, int y, int color) {
+        int x = startX;
+        for (StatColumn column : columns) {
+            this.mc.fontRendererObj.drawStringWithShadow(column.label, x, y, color);
+            x += column.width;
+        }
+    }
+
+    private void drawPlayerStats(List<Stat> stats, List<StatColumn> columns, int startX, int baselineY, int color) {
+        int x = startX;
+        for (int i = 0; i < stats.size(); i++) {
+            Stat stat = stats.get(i);
+            this.mc.fontRendererObj.drawStringWithShadow(formatStatValue(stat), x, baselineY, color);
+            int columnWidth = i < columns.size() ? columns.get(i).width : measureColumnWidth(stat);
+            x += columnWidth;
+        }
+    }
+
+    private List<Stat> resolveStats(HPlayer player, String gamemode) {
+        if (player == null || gamemode == null) {
+            return Collections.emptyList();
+        }
+
+        List<Stat> stats = player.getFormattedGameStats(gamemode);
+        if (stats == null || stats.isEmpty()) {
+            stats = player.getFormattedGameStats("BEDWARS");
+        }
+
+        return stats == null ? Collections.emptyList() : stats;
+    }
+
+    private String formatStatValue(Stat stat) {
+        if (stat == null) {
+            return "";
+        }
+
+        switch (stat.getType()) {
+            case INT:
+                return Integer.toString(((StatInt) stat).getValue());
+            case DOUBLE:
+                return Double.toString(((StatDouble) stat).getValue());
+            case STRING:
+                return ((StatString) stat).getValue();
+            default:
+                return "";
+        }
+    }
+
+    private String formatStatLabel(Stat stat) {
+        String statName = stat == null ? "" : stat.getStatName();
+        String normalized = statName == null ? "" : statName.toUpperCase();
+        return ChatColor.BOLD + normalized;
+    }
+
+    private int measureColumnWidth(Stat stat) {
+        return this.mc.fontRendererObj.getStringWidth(formatStatLabel(stat)) + 10;
     }
 
     private List<NetworkPlayerInfo> collectEligiblePlayers(NetHandlerPlayClient netHandler, StatWorld statWorld) {
@@ -514,6 +555,43 @@ public class StatsTab extends GuiPlayerTabOverlay {
             String s1 = EnumChatFormatting.YELLOW + "" + i;
             this.mc.fontRendererObj.drawStringWithShadow(s1, (float)(endX - this.mc.fontRendererObj.getStringWidth(s1)), (float)y + (this.entryHeight / 2 - 4), 16777215);
 //            drawRect(endX - this.mc.fontRendererObj.getStringWidth(objectiveIn.getDisplayName()), y, endX, y + this.entryHeight, 553648127);
+        }
+    }
+
+    private static final class TextBlock {
+        private static final TextBlock EMPTY = new TextBlock(new String[0], 0);
+        private final String[] lines;
+        private final int maxWidth;
+
+        private TextBlock(String[] lines, int maxWidth) {
+            this.lines = lines;
+            this.maxWidth = maxWidth;
+        }
+
+        private boolean hasLines() {
+            return this.lines.length > 0;
+        }
+
+        private int height(int lineHeight) {
+            return this.lines.length * lineHeight;
+        }
+
+        private int getMaxWidth() {
+            return this.maxWidth;
+        }
+
+        private String[] getLines() {
+            return this.lines;
+        }
+    }
+
+    private static final class StatColumn {
+        private final String label;
+        private final int width;
+
+        private StatColumn(String label, int width) {
+            this.label = label;
+            this.width = width;
         }
     }
 

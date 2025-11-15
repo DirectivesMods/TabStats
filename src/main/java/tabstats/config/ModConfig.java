@@ -14,16 +14,19 @@ import java.util.LinkedHashMap;
 import static tabstats.config.ModConfigNames.APIKEY;
 import static tabstats.config.ModConfigNames.RENDER_HEADER_FOOTER;
 import static tabstats.config.ModConfigNames.MOD_ENABLED;
+import static tabstats.config.ModConfigNames.URCHIN_API_KEY;
 
 public class ModConfig {
     private static final String CONFIG_FILENAME = "config.json";
     private String apiKey;
     private String lastApiKey; // Track the last API key to detect changes
+    private String urchinApiKey;
+    private String lastUrchinApiKey;
     private static ModConfig instance;
     private File configFile;
     private boolean renderHeaderFooter = true;
     private boolean modEnabled = true;
-    private long apiKeyLastLoaded = -1L;
+    private long configLastLoaded = -1L;
 
     public static ModConfig getInstance() {
         if (instance == null) instance = new ModConfig();
@@ -32,26 +35,13 @@ public class ModConfig {
     }
 
     public synchronized String getApiKey() {
-        File file = getFile();
-        if (file.exists()) {
-            long modified = file.lastModified();
-            if (this.apiKey == null || modified != this.apiKeyLastLoaded) {
-                String freshApiKey = getString(APIKEY);
-                this.apiKeyLastLoaded = modified;
+        reloadKeysFromDiskIfNeeded();
+        return this.apiKey == null ? "" : this.apiKey;
+    }
 
-                if (freshApiKey != null) {
-                    String normalizedFresh = normalizeKey(freshApiKey);
-                    String normalizedLast = normalizeKey(this.lastApiKey);
-                    if (!normalizedFresh.equals(normalizedLast) && this.lastApiKey != null) {
-                        onApiKeyChanged();
-                    }
-                    this.lastApiKey = freshApiKey;
-                    this.apiKey = freshApiKey;
-                }
-            }
-        }
-
-        return this.apiKey;
+    public synchronized String getUrchinApiKey() {
+        reloadKeysFromDiskIfNeeded();
+        return this.urchinApiKey == null ? "" : this.urchinApiKey;
     }
 
     private void onApiKeyChanged() {
@@ -79,6 +69,13 @@ public class ModConfig {
         }
     }
 
+    public void setUrchinApiKey(String key) {
+        if (!normalizeKey(key).equals(normalizeKey(this.urchinApiKey))) {
+            this.urchinApiKey = key;
+            this.lastUrchinApiKey = key;
+        }
+    }
+
     public boolean isRenderHeaderFooterEnabled() {
         return this.renderHeaderFooter;
     }
@@ -93,6 +90,42 @@ public class ModConfig {
 
     public void setModEnabled(boolean value) {
         this.modEnabled = value;
+    }
+
+    private void reloadKeysFromDiskIfNeeded() {
+        File file = getFile();
+        if (!file.exists()) {
+            return;
+        }
+
+        long modified = file.lastModified();
+        if (this.apiKey == null || this.urchinApiKey == null || modified != this.configLastLoaded) {
+            applyApiKeyFromDisk(getString(APIKEY));
+            applyUrchinKeyFromDisk(getString(URCHIN_API_KEY));
+            this.configLastLoaded = modified;
+        }
+    }
+
+    private void applyApiKeyFromDisk(String value) {
+        String freshValue = value == null ? "" : value;
+        String normalizedFresh = normalizeKey(freshValue);
+        String normalizedLast = normalizeKey(this.lastApiKey);
+        if (!normalizedFresh.equals(normalizedLast) && this.lastApiKey != null) {
+            onApiKeyChanged();
+        }
+        this.lastApiKey = freshValue;
+        this.apiKey = freshValue;
+    }
+
+    private void applyUrchinKeyFromDisk(String value) {
+        String freshValue = value == null ? "" : value;
+        String normalizedFresh = normalizeKey(freshValue);
+        String normalizedLast = normalizeKey(this.lastUrchinApiKey);
+        if (!normalizedFresh.equals(normalizedLast) && this.lastUrchinApiKey != null) {
+            onApiKeyChanged();
+        }
+        this.lastUrchinApiKey = freshValue;
+        this.urchinApiKey = freshValue;
     }
 
     private String normalizeKey(String key) {
@@ -117,6 +150,7 @@ public class ModConfig {
                 defaults.addProperty(MOD_ENABLED.toString(), true);
                 defaults.addProperty(RENDER_HEADER_FOOTER.toString(), true);
                 defaults.addProperty(APIKEY.toString(), "");
+                defaults.addProperty(URCHIN_API_KEY.toString(), "");
 
                 try (FileWriter writer = new FileWriter(file)) {
                     Handler.getGson().toJson(defaults, writer);
@@ -134,9 +168,11 @@ public class ModConfig {
         }
         apiKey = getString(APIKEY);
         lastApiKey = apiKey;
+        urchinApiKey = getString(URCHIN_API_KEY);
+        lastUrchinApiKey = urchinApiKey;
         renderHeaderFooter = getBoolean(RENDER_HEADER_FOOTER, true);
         modEnabled = getBoolean(MOD_ENABLED, true);
-        apiKeyLastLoaded = getFile().lastModified();
+        configLastLoaded = getFile().lastModified();
     }
 
     public File getFile() {
@@ -175,11 +211,12 @@ public class ModConfig {
         map.put(MOD_ENABLED.toString(), this.modEnabled);
         map.put(RENDER_HEADER_FOOTER.toString(), this.renderHeaderFooter);
         map.put(APIKEY.toString(), this.apiKey == null ? "" : this.apiKey); // Use the internal field, not getApiKey()
+        map.put(URCHIN_API_KEY.toString(), this.urchinApiKey == null ? "" : this.urchinApiKey);
         File file = getFile();
         try (Writer writer = new FileWriter(file)) {
             Handler.getGson().toJson(map, writer);
             writer.flush(); // Ensure it's written to disk
-            apiKeyLastLoaded = file.lastModified();
+            configLastLoaded = file.lastModified();
         } catch (Exception ex) {
             // Silently handle save errors
         }

@@ -85,6 +85,7 @@ public class WorldLoader extends StatWorld {
 
         if (currentWorld != lastObservedWorld) {
             lastObservedWorld = currentWorld;
+            this.lastWorldJoinTime = System.currentTimeMillis();
             // Only reset scroll position on world change, preserve cache
             resetTabScroll();
         }
@@ -155,6 +156,7 @@ public class WorldLoader extends StatWorld {
         this.clearPlayers();
         this.existedMoreThan5Seconds.clear();
         lastObservedWorld = null;
+        this.lastWorldJoinTime = 0L;
         resetTabScroll();
     }
 
