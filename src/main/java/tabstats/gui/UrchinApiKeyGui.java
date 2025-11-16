@@ -15,11 +15,6 @@ public class UrchinApiKeyGui extends AbstractApiKeyGui {
     }
 
     @Override
-    protected String getChatKeyName() {
-        return "Urchin API key";
-    }
-
-    @Override
     protected String readStoredKey(ModConfig cfg) {
         return cfg.getUrchinApiKey();
     }

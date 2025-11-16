@@ -8,7 +8,6 @@ import tabstats.util.ChatColor;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.GuiButton;
 import net.minecraft.client.gui.GuiScreen;
-import net.minecraft.util.ChatComponentText;
 import java.io.IOException;
 
 public class TabStatsGui extends GuiScreen {
@@ -69,9 +68,6 @@ public class TabStatsGui extends GuiScreen {
                 }
             }
 
-            if (Minecraft.getMinecraft().thePlayer != null) {
-                Minecraft.getMinecraft().thePlayer.addChatMessage(new ChatComponentText(ChatColor.GREEN + "[TabStats] " + ChatColor.WHITE + "Header/footer " + (newValue ? "enabled." : "disabled.")));
-            }
         } else if (button.id == 6) {
             boolean newValue = !cfg.isModEnabled();
             cfg.setModEnabled(newValue);
@@ -86,9 +82,6 @@ public class TabStatsGui extends GuiScreen {
                 instance.applyModEnabled(newValue);
             }
 
-            if (Minecraft.getMinecraft().thePlayer != null) {
-                Minecraft.getMinecraft().thePlayer.addChatMessage(new ChatComponentText(ChatColor.GREEN + "[TabStats] " + ChatColor.WHITE + "Mod " + (newValue ? "enabled." : "disabled.")));
-            }
         } else if (button.id == 7) {
             Minecraft.getMinecraft().displayGuiScreen(new HypixelApiKeyGui(this));
         } else if (button.id == 8) {

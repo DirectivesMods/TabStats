@@ -3,10 +3,8 @@ package tabstats.gui;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.GuiButton;
 import net.minecraft.client.gui.GuiScreen;
-import net.minecraft.util.ChatComponentText;
 import tabstats.TabStats;
 import tabstats.config.ModConfig;
-import tabstats.util.ChatColor;
 
 import java.io.IOException;
 
@@ -24,8 +22,6 @@ abstract class AbstractApiKeyGui extends GuiScreen {
     }
 
     protected abstract String getScreenTitle();
-
-    protected abstract String getChatKeyName();
 
     protected abstract String readStoredKey(ModConfig cfg);
 
@@ -90,9 +86,6 @@ abstract class AbstractApiKeyGui extends GuiScreen {
             this.apiField.setText(newKey);
             this.apiField.setRevealing(this.showingApiKey);
             triggerPlayerRefresh();
-            addChatMessage(getChatKeyName() + " updated.");
-        } else {
-            addChatMessage(getChatKeyName() + " unchanged.");
         }
     }
 
@@ -105,9 +98,6 @@ abstract class AbstractApiKeyGui extends GuiScreen {
             this.apiField.setText("");
             this.apiField.setRevealing(this.showingApiKey);
             triggerPlayerRefresh();
-            addChatMessage(getChatKeyName() + " cleared.");
-        } else {
-            addChatMessage(getChatKeyName() + " is already empty.");
         }
     }
 
@@ -128,14 +118,6 @@ abstract class AbstractApiKeyGui extends GuiScreen {
         } catch (Exception ignored) {
             // Silent fail - don't spam console
         }
-    }
-
-    private void addChatMessage(String message) {
-        Minecraft mc = Minecraft.getMinecraft();
-        if (mc == null || mc.thePlayer == null) {
-            return;
-        }
-        mc.thePlayer.addChatMessage(new ChatComponentText(ChatColor.GREEN + "[TabStats] " + ChatColor.WHITE + message));
     }
 
     private void returnToParent() {

@@ -47,8 +47,6 @@ public abstract class BedwarsUtil extends HGameBase {
     private static final Map<UrchinReportType, UrchinReportMatrixEntry> URCHIN_REPORT_LOOKUP = new EnumMap<>(UrchinReportType.class);
     private static final ConcurrentMap<String, CachedUrchinTag> URCHIN_TAG_CACHE = new ConcurrentHashMap<>();
     private static final UrchinLookupDispatcher URCHIN_LOOKUP_DISPATCHER = new UrchinLookupDispatcher();
-    private static final long URCHIN_BATCH_WINDOW_MS = 4000L;
-    private static final BatchWindowTracker URCHIN_BATCH_TRACKER = new BatchWindowTracker();
     private static final UrchinReportType[] URCHIN_PRIORITY = new UrchinReportType[]{
             UrchinReportType.CONFIRMED_CHEATER,
             UrchinReportType.BLATANT_CHEATER,
@@ -191,17 +189,7 @@ public abstract class BedwarsUtil extends HGameBase {
         if (identity == null || callback == null) {
             return;
         }
-        Long batchJoinTime = tryEnterUrchinBatchWindow();
-        if (batchJoinTime != null) {
-            URCHIN_LOOKUP_DISPATCHER.enqueue(identity, callback, batchJoinTime);
-            return;
-        }
-
-        Handler.asExecutor(() -> {
-            Map<String, CachedUrchinTag> result = resolveUrchinBatch(getActiveUrchinApiKey(), Collections.singletonList(identity));
-            CachedUrchinTag tag = result.get(identity);
-            callback.accept(tag == null ? createPendingTag() : tag);
-        });
+        URCHIN_LOOKUP_DISPATCHER.enqueue(identity, callback);
     }
 
     private static Map<String, CachedUrchinTag> resolveUrchinBatch(String apiKey, Collection<String> identities) {
@@ -248,58 +236,40 @@ public abstract class BedwarsUtil extends HGameBase {
         return results;
     }
 
-    private static Long tryEnterUrchinBatchWindow() {
-        if (URCHIN_BATCH_WINDOW_MS <= 0L) {
-            return null;
-        }
-        TabStats instance = TabStats.getTabStats();
-        if (instance == null) {
-            return null;
-        }
-        StatWorld world = instance.getStatWorld();
-        if (world == null) {
-            return null;
-        }
-        long joinTime = world.getLastWorldJoinTime();
-        if (joinTime <= 0L) {
-            return null;
-        }
-        if (System.currentTimeMillis() - joinTime > URCHIN_BATCH_WINDOW_MS) {
-            return null;
-        }
-        return URCHIN_BATCH_TRACKER.tryAcquire(joinTime) ? joinTime : null;
-    }
-
     /**
-     * Batches Urchin lookups so that world joins don't spam the API with one request per player.
+     * Batches Urchin lookups so repeated requests share a single API call.
      */
     private static final class UrchinLookupDispatcher {
-        private static final long BATCH_DEBOUNCE_MS = 150L;
+        // Small delay to accumulate simultaneous requests without feeling slow.
+        private static final long BATCH_DEBOUNCE_MS = 125L;
 
         private final Object lock = new Object();
         private final LinkedHashMap<String, List<Consumer<CachedUrchinTag>>> pendingLookups = new LinkedHashMap<>();
         private boolean draining;
 
-        void enqueue(String identity, Consumer<CachedUrchinTag> callback, long joinTime) {
+        void enqueue(String identity, Consumer<CachedUrchinTag> callback) {
             synchronized (lock) {
                 pendingLookups.computeIfAbsent(identity, key -> new ArrayList<>()).add(callback);
                 if (!draining) {
                     draining = true;
-                    Handler.asExecutor(() -> processOnce(joinTime));
+                    Handler.asExecutor(this::processLoop);
                 }
             }
         }
 
-        private void processOnce(long joinTime) {
-            delay(BATCH_DEBOUNCE_MS);
-            List<LookupRequest> batch = pollBatch();
-            if (!batch.isEmpty()) {
-                dispatch(batch);
-            }
-            URCHIN_BATCH_TRACKER.markConsumed(joinTime);
-            synchronized (lock) {
-                pendingLookups.clear();
-                draining = false;
+        private void processLoop() {
+            while (true) {
+                delay(BATCH_DEBOUNCE_MS);
+                List<LookupRequest> batch = pollBatch();
+                if (!batch.isEmpty()) {
+                    dispatch(batch);
+                }
+                synchronized (lock) {
+                    if (pendingLookups.isEmpty()) {
+                        draining = false;
+                        return;
+                    }
+                }
             }
         }
 
@@ -364,28 +334,6 @@ public abstract class BedwarsUtil extends HGameBase {
             private LookupRequest(String identity, List<Consumer<CachedUrchinTag>> callbacks) {
                 this.identity = identity;
                 this.callbacks = callbacks == null ? Collections.emptyList() : callbacks;
-            }
-        }
-    }
-
-    private static final class BatchWindowTracker {
-        private long trackedJoinTime = -1L;
-        private boolean consumed;
-
-        synchronized boolean tryAcquire(long joinTime) {
-            if (joinTime <= 0L) {
-                return false;
-            }
-            if (joinTime != trackedJoinTime) {
-                trackedJoinTime = joinTime;
-                consumed = false;
-            }
-            return !consumed;
-        }
-
-        synchronized void markConsumed(long joinTime) {
-            if (joinTime == trackedJoinTime) {
-                consumed = true;
             }
         }
     }
@@ -493,12 +441,12 @@ public abstract class BedwarsUtil extends HGameBase {
 
     private static String formatUrchinTag(UrchinReportType type) {
         UrchinReportMatrixEntry entry = getMatrixEntry(type);
-        return entry == null ? NO_RESPONSE_TAG : entry.getDisplayValue();
+        return applyBoldFormatting(entry == null ? NO_RESPONSE_TAG : entry.getDisplayValue());
     }
 
     private static String formatUrchinChatTag(UrchinReportType type) {
         UrchinReportMatrixEntry entry = getMatrixEntry(type);
-        return entry == null ? NO_RESPONSE_TAG : entry.getChatLabel();
+        return applyBoldFormatting(entry == null ? NO_RESPONSE_TAG : entry.getChatLabel());
     }
 
     private static UrchinReportMatrixEntry getMatrixEntry(UrchinReportType type) {
@@ -571,6 +519,18 @@ public abstract class BedwarsUtil extends HGameBase {
         } else {
             mc.addScheduledTask(task);
         }
+    }
+
+    private static String applyBoldFormatting(String value) {
+        if (value == null || value.isEmpty() || value.contains(ChatColor.BOLD.toString())) {
+            return value;
+        }
+
+        int insertIndex = 0;
+        while (insertIndex + 1 < value.length() && value.charAt(insertIndex) == ChatColor.COLOR_CHAR) {
+            insertIndex += 2;
+        }
+        return value.substring(0, insertIndex) + ChatColor.BOLD + value.substring(insertIndex);
     }
 
     protected String getFormattedPlayerLabel() {

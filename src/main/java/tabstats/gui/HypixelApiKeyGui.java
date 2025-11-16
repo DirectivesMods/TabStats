@@ -15,11 +15,6 @@ public class HypixelApiKeyGui extends AbstractApiKeyGui {
     }
 
     @Override
-    protected String getChatKeyName() {
-        return "Hypixel API key";
-    }
-
-    @Override
     protected String readStoredKey(ModConfig cfg) {
         return cfg.getApiKey();
     }
