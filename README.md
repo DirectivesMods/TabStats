@@ -1,6 +1,6 @@
 # TabStats
 
-A forge 1.8.9 mod to check Hypixel player stats directly into your tablist!
+A 1.8.9 Forge mod to check Hypixel player stats directly into your tablist!
 
 Discord: [https://discord.gg/F9pQmx37XJ](https://discord.gg/F9pQmx37XJ)
 
