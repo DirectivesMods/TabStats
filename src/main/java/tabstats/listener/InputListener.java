@@ -24,8 +24,6 @@ public class InputListener {
             return;
         }
 
-        event.setCanceled(true);
-
         if (mc.getNetHandler() == null) {
             return;
         }

@@ -148,7 +148,7 @@ abstract class AbstractApiKeyGui extends GuiScreen {
     public void drawScreen(int mouseX, int mouseY, float partialTicks) {
         this.drawDefaultBackground();
         drawCenteredString(this.fontRendererObj, getScreenTitle(), this.width / 2, this.titleY, 0xFFFFFF);
-        drawString(this.fontRendererObj, getScreenTitle() + ":", this.fieldX, this.fieldY - 12, 0xAAAAAA);
+        drawString(this.fontRendererObj, getScreenTitle() + " Key:", this.fieldX, this.fieldY - 12, 0xAAAAAA);
         this.apiField.drawTextBox();
         super.drawScreen(mouseX, mouseY, partialTicks);
     }

@@ -48,7 +48,7 @@ public class UrchinAPI {
      * {@link UrchinReportType} are retained.
      *
      * @param apiKey    Urchin API key
-     * @param usernames Player names to check
+     * @param usernames Player names or UUIDs to check
      * @return Map keyed by normalized username containing zero or more hits
      */
     public Map<String, List<UrchinReport>> fetchPlayerReports(String apiKey, Collection<String> usernames)
